@@ -11,33 +11,86 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   Modal,
+  Alert,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
-import { ProgressBar } from "../../components/ProgressBar"; 
+import { ProgressBar } from "../../components/ProgressBar";
+import { trpc } from "../../lib/trpc";
+
+type TipoAtividade = "corrida" | "forca" | "ciclismo" | "natacao" | "yoga" | "esporte" | "outro";
+type Intensidade = "leve" | "moderado" | "intenso";
+
+const TIPOS: { value: TipoAtividade; label: string; icon: string }[] = [
+  { value: "corrida", label: "Corrida", icon: "🏃" },
+  { value: "forca", label: "Força", icon: "💪" },
+  { value: "ciclismo", label: "Ciclismo", icon: "🚴" },
+  { value: "natacao", label: "Natação", icon: "🏊" },
+  { value: "yoga", label: "Yoga", icon: "🧘" },
+  { value: "esporte", label: "Esporte", icon: "⚽" },
+  { value: "outro", label: "Outro", icon: "🏋️" },
+];
+
+const INTENSIDADES: { value: Intensidade; label: string; cor: string }[] = [
+  { value: "leve", label: "Leve", cor: "#4CAF50" },
+  { value: "moderado", label: "Moderado", cor: Colors.primary },
+  { value: "intenso", label: "Intenso", cor: "#F44336" },
+];
+
+const XP_POR_NIVEL = 3000;
 
 export default function LogActivityScreen() {
-  const [activityType, setActivityType] = useState("");
+  const utils = trpc.useUtils();
+
+  const [tipoAtividade, setTipoAtividade] = useState<TipoAtividade | null>(null);
   const [minutes, setMinutes] = useState("");
-  const [seconds, setSeconds] = useState("");
-  const [calories, setCalories] = useState("");
-  
- 
+  const [intensidade, setIntensidade] = useState<Intensidade | null>(null);
   const [showReward, setShowReward] = useState(false);
+  const [resultado, setResultado] = useState<{ xpGanho: number; xpDepois: number; nivelDepois: number } | null>(null);
+
+  const registrarMutation = trpc.atividades.registrar.useMutation({
+    onSuccess: (data) => {
+      setResultado({
+        xpGanho: data.xp.xpGanho,
+        xpDepois: data.xp.xpDepois,
+        nivelDepois: data.xp.nivelDepois,
+      });
+      utils.personagens.meuPersonagem.invalidate();
+      utils.streak.atual.invalidate();
+      setShowReward(true);
+    },
+    onError: (e) => Alert.alert("Erro ao registrar", e.message),
+  });
 
   const handleLogActivity = () => {
-
-    setShowReward(true);
+    if (!tipoAtividade || !minutes.trim() || !intensidade) {
+      Alert.alert("Atenção", "Selecione o tipo de atividade, duração e intensidade.");
+      return;
+    }
+    const duracaoMinutos = parseInt(minutes, 10);
+    if (isNaN(duracaoMinutos) || duracaoMinutos <= 0) {
+      Alert.alert("Atenção", "Informe uma duração válida em minutos.");
+      return;
+    }
+    registrarMutation.mutate({ tipoAtividade, duracaoMinutos, intensidade });
   };
 
   const handleFinishReward = () => {
     setShowReward(false);
-
+    setTipoAtividade(null);
+    setMinutes("");
+    setIntensidade(null);
+    setResultado(null);
     router.replace("/(tabs)/dashboard");
   };
+
+  const tipoSelecionado = TIPOS.find((t) => t.value === tipoAtividade);
+  const xpNoNivel = resultado ? resultado.xpDepois % XP_POR_NIVEL : 0;
+  const progresso = xpNoNivel / XP_POR_NIVEL;
+  const podeSalvar = !!tipoAtividade && !!minutes.trim() && !!intensidade;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -54,53 +107,75 @@ export default function LogActivityScreen() {
             <View style={styles.topBar}>
               <TouchableOpacity
                 style={styles.backButton}
-                onPress={() => router.back()}
+                onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/dashboard")}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
-                <Ionicons name="arrow-back" size={24} color={Colors.primary} />
+                <Ionicons name="arrow-back" size={22} color={Colors.primary} />
               </TouchableOpacity>
             </View>
-
             <View style={styles.header}>
-              <Text style={styles.headerIcon}>➕</Text>
               <Text style={styles.headerTitle}>Registrar Atividade</Text>
+              <Text style={styles.headerSub}>Registre seu treino e ganhe XP</Text>
             </View>
 
             <View style={styles.formCard}>
               <Text style={styles.label}>Tipo de Atividade</Text>
-              <CustomInput
-                placeholder="Ex: Corrida, Musculação..."
-                value={activityType}
-                onChangeText={setActivityType}
-              />
-
-              <Text style={styles.label}>Duração</Text>
-              <View style={styles.row}>
-                <View style={styles.halfInputContainer}>
-                  <CustomInput
-                    placeholder="Minutos"
-                    value={minutes}
-                    onChangeText={setMinutes}
-                    keyboardType="numeric"
-                  />
-                </View>
-                <View style={styles.halfInputContainer}>
-                  <CustomInput
-                    placeholder="Segundos"
-                    value={seconds}
-                    onChangeText={setSeconds}
-                    keyboardType="numeric"
-                  />
-                </View>
+              <View style={styles.tiposGrid}>
+                {TIPOS.map((tipo) => (
+                  <TouchableOpacity
+                    key={tipo.value}
+                    style={[
+                      styles.tipoButton,
+                      tipoAtividade === tipo.value && styles.tipoButtonAtivo,
+                    ]}
+                    onPress={() => setTipoAtividade(tipo.value)}
+                  >
+                    <Text style={styles.tipoIcon}>{tipo.icon}</Text>
+                    <Text
+                      style={[
+                        styles.tipoLabel,
+                        tipoAtividade === tipo.value && styles.tipoLabelAtivo,
+                      ]}
+                    >
+                      {tipo.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
               </View>
 
-              <Text style={styles.label}>Calorias (opcional)</Text>
+              <Text style={styles.label}>Duração (minutos)</Text>
               <CustomInput
-                placeholder="Ex: 150"
-                value={calories}
-                onChangeText={setCalories}
+                placeholder="Ex: 30"
+                value={minutes}
+                onChangeText={setMinutes}
                 keyboardType="numeric"
               />
+
+              <Text style={styles.label}>Intensidade</Text>
+              <View style={styles.intensidadeRow}>
+                {INTENSIDADES.map((item) => (
+                  <TouchableOpacity
+                    key={item.value}
+                    style={[
+                      styles.intensidadeButton,
+                      intensidade === item.value && {
+                        borderColor: item.cor,
+                        backgroundColor: `${item.cor}20`,
+                      },
+                    ]}
+                    onPress={() => setIntensidade(item.value)}
+                  >
+                    <Text
+                      style={[
+                        styles.intensidadeText,
+                        intensidade === item.value && { color: item.cor },
+                      ]}
+                    >
+                      {item.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
 
               <View style={styles.infoBox}>
                 <Ionicons
@@ -110,26 +185,22 @@ export default function LogActivityScreen() {
                   style={styles.infoIcon}
                 />
                 <Text style={styles.infoText}>
-                  Dica: Você ganhará XP baseado na duração e intensidade. Quanto mais desafiador, mais XP!
+                  Dica: Você ganhará XP baseado na duração e intensidade. Quanto mais
+                  desafiador, mais XP!
                 </Text>
               </View>
 
               <PrimaryButton
-                title="REGISTRAR E GANHAR XP"
+                title={registrarMutation.isPending ? "REGISTRANDO..." : "REGISTRAR E GANHAR XP"}
                 onPress={handleLogActivity}
-                disabled={activityType.trim() === "" || minutes.trim() === ""}
+                disabled={!podeSalvar || registrarMutation.isPending}
               />
             </View>
           </ScrollView>
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-
-      <Modal
-        visible={showReward}
-        animationType="slide"
-        transparent={false}
-      >
+      <Modal visible={showReward} animationType="slide" transparent={false}>
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.rewardContent}>
             <View style={styles.glowCircle}>
@@ -137,19 +208,26 @@ export default function LogActivityScreen() {
             </View>
 
             <Text style={styles.rewardTitle}>Missão Concluída!</Text>
-            <Text style={styles.rewardSubtitle}>{activityType || "Atividade"}</Text>
+            <Text style={styles.rewardSubtitle}>
+              {tipoSelecionado?.label ?? "Atividade"} • {minutes} min
+            </Text>
 
             <View style={styles.xpCard}>
-              <Text style={styles.xpValue}>+45 XP</Text>
+              <Text style={styles.xpValue}>+{resultado?.xpGanho ?? 0} XP</Text>
               <Text style={styles.xpLabel}>Experiência Adquirida</Text>
             </View>
 
             <View style={styles.rewardProgressSection}>
               <View style={styles.rewardProgressHeader}>
-                <Text style={styles.rewardLevelText}>Nível 1</Text>
-                <Text style={styles.rewardProgressText}>45 / 1.000 XP</Text>
+                <Text style={styles.rewardLevelText}>
+                  Nível {resultado?.nivelDepois ?? 1}
+                </Text>
+                <Text style={styles.rewardProgressText}>
+                  {(resultado?.xpDepois ?? 0 % XP_POR_NIVEL).toLocaleString("pt-BR")} /{" "}
+                  {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+                </Text>
               </View>
-              <ProgressBar progress={0.045} />
+              <ProgressBar progress={progresso} />
             </View>
 
             <View style={styles.rewardFooter}>
@@ -177,14 +255,12 @@ const styles = StyleSheet.create({
     flexGrow: 1,
   },
   topBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 24,
+    marginBottom: 16,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: Colors.surfaceDark,
     justifyContent: "center",
     alignItems: "center",
@@ -192,18 +268,17 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
     marginBottom: 24,
   },
-  headerIcon: {
-    fontSize: 24,
-    marginRight: 10,
-  },
   headerTitle: {
-    color: Colors.primary,
+    color: Colors.textPrimary,
     fontSize: 24,
     fontWeight: "bold",
+  },
+  headerSub: {
+    color: Colors.textMuted,
+    fontSize: 13,
+    marginTop: 4,
   },
   formCard: {
     backgroundColor: Colors.surfaceDark,
@@ -221,16 +296,58 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 14,
     fontWeight: "600",
-    marginBottom: 8,
+    marginBottom: 12,
     marginLeft: 4,
   },
-  row: {
+  tiposGrid: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    flexWrap: "wrap",
+    gap: 8,
+    marginBottom: 24,
   },
-  halfInputContainer: {
+  tipoButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  tipoButtonAtivo: {
+    borderColor: Colors.primary,
+    backgroundColor: "rgba(245, 166, 35, 0.15)",
+  },
+  tipoIcon: {
+    fontSize: 16,
+  },
+  tipoLabel: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  tipoLabelAtivo: {
+    color: Colors.primary,
+  },
+  intensidadeRow: {
+    flexDirection: "row",
+    gap: 8,
+    marginBottom: 24,
+  },
+  intensidadeButton: {
     flex: 1,
-    marginHorizontal: 4,
+    paddingVertical: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    alignItems: "center",
+  },
+  intensidadeText: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "bold",
   },
   infoBox: {
     flexDirection: "row",
@@ -252,8 +369,6 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 20,
   },
-  
-
   modalContainer: {
     flex: 1,
     backgroundColor: Colors.background,

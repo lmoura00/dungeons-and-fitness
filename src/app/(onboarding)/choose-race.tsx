@@ -1,46 +1,53 @@
 import React, { useState, useRef } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ScrollView, 
-  SafeAreaView, 
-  Image, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  Image,
   PanResponder,
-  Platform
+  Platform,
+  ActivityIndicator,
 } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { PrimaryButton } from '../../components/PrimaryButton';
+import { limparNovaContaPendente } from '../../lib/auth';
+import { trpc } from '../../lib/trpc';
 
-const RACES = [
-  { 
-    id: 'human', 
-    name: 'Humano', 
-    imageSource: require('../../../assets/race-human.png'), 
-    desc: 'Versáteis e ambiciosos, humanos se adaptam a qualquer desafio físico.', 
-    skills: ['+5% de bônus em todo XP', 'Recuperação padrão'] 
+const RACES_STATIC = [
+  {
+    key: 'Humano',
+    imageSource: require('../../../assets/race-human.png'),
+    desc: 'Versáteis e ambiciosos, humanos se adaptam a qualquer desafio físico.',
+    skills: ['+5% de bônus em todo XP', 'Recuperação padrão']
   },
-  { 
-    id: 'dwarf', 
-    name: 'Anão', 
-    imageSource: require('../../../assets/race-dwarf.png'), 
-    desc: 'Robustos e resilientes, os anões são conhecidos por sua força extraordinária e resistência lendária nas batalhas mais intensas.', 
-    skills: ['Força Anã (+15% força)', 'Resiliência de Pedra (recuperação rápida)'] 
+  {
+    key: 'Anão',
+    imageSource: require('../../../assets/race-dwarf.png'),
+    desc: 'Robustos e resilientes, os anões são conhecidos por sua força extraordinária e resistência lendária nas batalhas mais intensas.',
+    skills: ['Força Anã (+15% força)', 'Resiliência de Pedra (recuperação rápida)']
   },
-  { 
-    id: 'elf', 
-    name: 'Elfo', 
-    imageSource: require('../../../assets/race-elf.png'), 
-    desc: 'Ágeis e precisos, elfos possuem uma estamina invejável para longas jornadas.', 
-    skills: ['Agilidade Élfica (+20% cardio)', 'Foco mental'] 
+  {
+    key: 'Elfo',
+    imageSource: require('../../../assets/race-elf.png'),
+    desc: 'Ágeis e precisos, elfos possuem uma estamina invejável para longas jornadas.',
+    skills: ['Agilidade Élfica (+20% cardio)', 'Foco mental']
   }
 ];
 
 export default function ChooseRaceScreen() {
-  const [selectedRace, setSelectedRace] = useState(RACES[1]);
+  const [selectedIndex, setSelectedIndex] = useState(1);
+  const { data: racesFromApi, isLoading } = trpc.racas.listar.useQuery();
+
+  const RACES = RACES_STATIC.map((r) => {
+    const fromApi = racesFromApi?.find((a) => a.name === r.key);
+    return { id: fromApi?.id ?? '', name: r.key, imageSource: r.imageSource, desc: r.desc, skills: r.skills };
+  });
+  const selectedRace = RACES[selectedIndex];
 
   const panResponder = useRef(
     PanResponder.create({
@@ -49,21 +56,16 @@ export default function ChooseRaceScreen() {
       },
       onPanResponderRelease: (evt, gestureState) => {
         if (gestureState.dx > 50) {
-          setSelectedRace((prevRace) => {
-            const currentIndex = RACES.findIndex(r => r.id === prevRace.id);
-            return currentIndex > 0 ? RACES[currentIndex - 1] : prevRace;
-          });
+          setSelectedIndex((i) => Math.max(0, i - 1));
         } else if (gestureState.dx < -50) {
-          setSelectedRace((prevRace) => {
-            const currentIndex = RACES.findIndex(r => r.id === prevRace.id);
-            return currentIndex < RACES.length - 1 ? RACES[currentIndex + 1] : prevRace;
-          });
+          setSelectedIndex((i) => Math.min(RACES.length - 1, i + 1));
         }
       },
     })
   ).current;
 
   const handleNext = () => {
+    if (!selectedRace.id) return;
     router.push({ pathname: '/(onboarding)/name', params: { raceId: selectedRace.id, raceName: selectedRace.name } });
   };
 
@@ -72,14 +74,14 @@ export default function ChooseRaceScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.backButton} 
-            onPress={() => router.back()}
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => router.replace('/(tabs)/dashboard')}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back" size={24} color={Colors.primary} />
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => router.push('/(tabs)/dashboard')}>
+          <TouchableOpacity onPress={() => { limparNovaContaPendente(); router.replace('/(tabs)/dashboard'); }}>
              <Text style={styles.skipText}>Pular ➝</Text>
           </TouchableOpacity>
         </View>
@@ -91,20 +93,22 @@ export default function ChooseRaceScreen() {
         <View {...panResponder.panHandlers}>
           
           <View style={styles.raceSelector}>
-            {RACES.map((race) => (
-              <TouchableOpacity 
-                key={race.id}
-                style={[styles.raceIconWrapper, selectedRace.id === race.id && styles.raceIconSelected]}
-                onPress={() => setSelectedRace(race)}
+            {isLoading ? (
+              <ActivityIndicator color={Colors.primary} />
+            ) : RACES.map((race, index) => (
+              <TouchableOpacity
+                key={race.name}
+                style={[styles.raceIconWrapper, selectedIndex === index && styles.raceIconSelected]}
+                onPress={() => setSelectedIndex(index)}
               >
-                <View style={[styles.imageContainer, selectedRace.id === race.id && styles.imageContainerSelected]}>
-                  <Image 
-                    source={race.imageSource} 
-                    style={styles.raceImage} 
+                <View style={[styles.imageContainer, selectedIndex === index && styles.imageContainerSelected]}>
+                  <Image
+                    source={race.imageSource}
+                    style={styles.raceImage}
                     resizeMode="cover"
                   />
                 </View>
-                <Text style={[styles.raceName, selectedRace.id === race.id && styles.raceNameSelected]}>
+                <Text style={[styles.raceName, selectedIndex === index && styles.raceNameSelected]}>
                   {race.name}
                 </Text>
               </TouchableOpacity>
@@ -133,17 +137,14 @@ export default function ChooseRaceScreen() {
 
         <View style={styles.footer}>
           <View style={styles.pagination}>
-            {RACES.map((race) => (
-              <View 
-                key={race.id} 
-                style={[
-                  styles.dot, 
-                  selectedRace.id === race.id && styles.dotActive
-                ]} 
+            {RACES.map((race, index) => (
+              <View
+                key={race.name}
+                style={[styles.dot, selectedIndex === index && styles.dotActive]}
               />
             ))}
           </View>
-          <PrimaryButton title="PRÓXIMO" onPress={handleNext} />
+          <PrimaryButton title="PRÓXIMO" onPress={handleNext} disabled={isLoading || !selectedRace.id} />
         </View>
 
       </ScrollView>

@@ -1,182 +1,246 @@
-import React, { useState } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  KeyboardAvoidingView, 
-  Platform, 
-  TouchableWithoutFeedback, 
-  Keyboard, 
+import React, { useState, useRef, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
   ScrollView,
   TouchableOpacity,
-  Image
-} from 'react-native';
-import { router } from 'expo-router';
-import { Colors } from '../../constants/Colors';
-import { CustomInput } from '../../components/CustomInput';
-import { PrimaryButton } from '../../components/PrimaryButton';
-import { Ionicons } from '@expo/vector-icons'; 
+} from "react-native";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Colors } from "../../constants/Colors";
+import { CustomInput } from "../../components/CustomInput";
+import { PrimaryButton } from "../../components/PrimaryButton";
+import { trpc } from "../../lib/trpc";
+import { salvarSessao, marcarNovaContaPendente } from "../../lib/auth";
+
+const GENERO_MAP = { M: "masculino", F: "feminino", O: "nao_binario" } as const;
+const GENEROS = [
+  { key: "M", label: "Masculino", icon: "♂" },
+  { key: "F", label: "Feminino",  icon: "♀" },
+  { key: "O", label: "Outro",     icon: "⚧" },
+] as const;
+
+type FeedbackType = { type: "success" | "error"; message: string } | null;
 
 export default function RegisterScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  
-  const [gender, setGender] = useState<'M' | 'F' | 'O' | null>('M'); 
-  const [weight, setWeight] = useState('');
-  const [height, setHeight] = useState('');
+  const [name, setName] = useState("");
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [gender, setGender] = useState<"M" | "F" | "O">("M");
+  const [feedback, setFeedback] = useState<FeedbackType>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const handleRegister = () => {
-    console.log('Registrando:', { name, email, gender, weight, height });
-    router.push('/(onboarding)/choose-race');
+  useEffect(() => () => { if (timerRef.current) clearTimeout(timerRef.current); }, []);
+
+  const showError = (message: string) => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setFeedback({ type: "error", message });
+    timerRef.current = setTimeout(() => setFeedback(null), 5000);
   };
 
-  const handleGoBack = () => {
-    router.back();
+  const loginMutation = trpc.auth.login.useMutation({
+    async onSuccess({ token, usuarioId }) {
+      setFeedback({ type: "success", message: "Conta criada! Preparando sua aventura..." });
+      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
+      marcarNovaContaPendente();
+      await salvarSessao(token, usuarioId);
+    },
+    onError() {
+      showError("Conta criada! Faça login para continuar.");
+      setTimeout(() => router.replace("/(auth)"), 2500);
+    },
+  });
+
+  const registerMutation = trpc.auth.registrar.useMutation({
+    onSuccess() {
+      loginMutation.mutate({ email: email.trim(), senha: password });
+    },
+    onError(error) {
+      showError(error.message);
+    },
+  });
+
+  const enviando = registerMutation.isPending || loginMutation.isPending;
+
+  const handleRegister = () => {
+    if (!name.trim() || !username.trim() || !email.trim() || !password) {
+      showError("Preencha todos os campos obrigatórios.");
+      return;
+    }
+    if (password.length < 6) {
+      showError("A senha precisa ter ao menos 6 caracteres.");
+      return;
+    }
+    if (password !== confirmPassword) {
+      showError("As senhas não coincidem.");
+      return;
+    }
+    registerMutation.mutate({
+      email: email.trim(),
+      senha: password,
+      nomeUsuario: username.trim(),
+      nomeCompleto: name.trim(),
+      genero: GENERO_MAP[gender],
+    });
   };
 
   return (
-    <KeyboardAvoidingView 
+    <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled" 
-        >
+      {/* Toast de feedback */}
+      {feedback && (
+        <View style={[styles.toast, feedback.type === "success" ? styles.toastSuccess : styles.toastError]}>
+          <Ionicons
+            name={feedback.type === "success" ? "checkmark-circle" : "alert-circle"}
+            size={18}
+            color={feedback.type === "success" ? "#4CAF50" : "#EF4444"}
+          />
+          <Text style={styles.toastText}>{feedback.message}</Text>
+          {feedback.type === "error" && (
+            <TouchableOpacity onPress={() => setFeedback(null)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close" size={16} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+        >
+          {/* Header */}
           <View style={styles.topBar}>
-            <TouchableOpacity 
-              style={styles.backButton} 
-              onPress={handleGoBack}
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={24} color={Colors.primary} />
+              <Ionicons name="arrow-back" size={22} color={Colors.primary} />
             </TouchableOpacity>
           </View>
-          
-          <View style={styles.header}>
-            <View style={styles.placeholderLogo}>
-              <Image
-                source={require("../../../assets/logo_df_circulo 1.png")}
-                style={styles.logoImage}
-              />
-            </View>
-            <Text style={styles.appTitle}>Nova Jornada</Text>
-            <Text style={styles.subtitle}>Crie sua conta e comece sua aventura épica</Text>
+
+          <View style={styles.hero}>
+            <Text style={styles.heroTitle}>Nova Jornada</Text>
+            <Text style={styles.heroSub}>Crie sua conta e comece a aventura</Text>
           </View>
 
-          <View style={styles.formCard}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionIcon}>📄</Text>
-              <Text style={styles.sectionTitle}>DADOS PESSOAIS</Text>
-            </View>
+          {/* Seção: Conta */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>CONTA</Text>
 
-            <CustomInput 
+            <Text style={styles.fieldLabel}>Nome completo</Text>
+            <CustomInput
               icon="person-outline"
-              placeholder="Nome completo" 
+              placeholder="Seu nome"
               value={name}
               onChangeText={setName}
             />
-            
-            <CustomInput 
+
+            <Text style={styles.fieldLabel}>Nome de usuário</Text>
+            <CustomInput
+              icon="at-outline"
+              placeholder="@seuusuario"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
+
+            <Text style={styles.fieldLabel}>E-mail</Text>
+            <CustomInput
               icon="mail-outline"
-              placeholder="Email" 
+              placeholder="seu@email.com"
               value={email}
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
             />
-            
-            <CustomInput 
-              icon="lock-closed-outline"
-              placeholder="Senha (mín. 8 caracteres)" 
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
 
-            <CustomInput 
-              icon="checkmark-circle-outline"
-              placeholder="Confirmar senha" 
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-            />
-
-           
-            <View style={[styles.sectionHeader, { marginTop: 16 }]}>
-              <Text style={styles.sectionIcon}>🛡️</Text>
-              <Text style={styles.sectionTitle}>DADOS FÍSICOS</Text>
+            <Text style={styles.fieldLabel}>Senha</Text>
+            <View style={styles.passwordWrap}>
+              <CustomInput
+                icon="lock-closed-outline"
+                placeholder="Mín. 6 caracteres"
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry={!showPassword}
+                style={styles.passwordInput}
+              />
+              <TouchableOpacity
+                style={styles.eyeButton}
+                onPress={() => setShowPassword((v) => !v)}
+                hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+              >
+                <Ionicons
+                  name={showPassword ? "eye-off-outline" : "eye-outline"}
+                  size={20}
+                  color={Colors.textMuted}
+                />
+              </TouchableOpacity>
             </View>
 
-           
-            <View style={styles.genderRow}>
-              {(['M', 'F', 'O'] as const).map((item) => (
-                <TouchableOpacity 
-                  key={item}
-                  style={[
-                    styles.genderButton,
-                    gender === item && styles.genderButtonActive
-                  ]}
-                  onPress={() => setGender(item)}
+            <Text style={styles.fieldLabel}>Confirmar senha</Text>
+            <CustomInput
+              icon="checkmark-circle-outline"
+              placeholder="Repita a senha"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry={!showPassword}
+            />
+          </View>
+
+          {/* Seção: Perfil */}
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>PERFIL</Text>
+            <Text style={styles.fieldLabel}>Gênero</Text>
+            <View style={styles.generoRow}>
+              {GENEROS.map((g) => (
+                <TouchableOpacity
+                  key={g.key}
+                  style={[styles.generoButton, gender === g.key && styles.generoButtonAtivo]}
+                  onPress={() => setGender(g.key)}
+                  activeOpacity={0.8}
                 >
-                  <Text style={styles.genderTextIcon}>
-                    {item === 'M' ? '♂️' : item === 'F' ? '♀️' : '⚧️'}
-                  </Text>
-                  <Text style={[
-                    styles.genderText,
-                    gender === item && styles.genderTextActive
-                  ]}>
-                    {item === 'M' ? 'Masc.' : item === 'F' ? 'Fem.' : 'Outro'}
+                  <Text style={styles.generoIcon}>{g.icon}</Text>
+                  <Text style={[styles.generoLabel, gender === g.key && styles.generoLabelAtivo]}>
+                    {g.label}
                   </Text>
                 </TouchableOpacity>
               ))}
             </View>
+          </View>
 
-          
-            <View style={styles.row}>
-              <View style={styles.halfInputContainer}>
-                <CustomInput 
-                  placeholder="Peso (kg)" 
-                  value={weight}
-                  onChangeText={setWeight}
-                  keyboardType="numeric"
-                />
-              </View>
-              <View style={styles.halfInputContainer}>
-                <CustomInput 
-                  placeholder="Altura (cm)" 
-                  value={height}
-                  onChangeText={setHeight}
-                  keyboardType="numeric"
-                />
-              </View>
+          {/* Ações */}
+          <View style={styles.actions}>
+            <PrimaryButton
+              title={enviando ? "CRIANDO CONTA..." : "CRIAR CONTA"}
+              onPress={handleRegister}
+              disabled={enviando}
+            />
+
+            <View style={styles.divider}>
+              <View style={styles.dividerLine} />
+              <Text style={styles.dividerText}>ou</Text>
+              <View style={styles.dividerLine} />
             </View>
 
-        
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoIcon}>💡</Text>
-              <Text style={styles.infoText}>Calculamos calorias e personalizamos sua jornada</Text>
-            </View>
-
-          
-            <View style={styles.actionsContainer}>
-              <PrimaryButton title="CRIAR CONTA" onPress={handleRegister} />
-              
-              
-              <View style={styles.dividerContainer}>
-                <View style={styles.dividerLine} />
-                <Text style={styles.dividerText}>ou</Text>
-                <View style={styles.dividerLine} />
-              </View>
-              
-              <PrimaryButton title="JÁ TENHO CONTA" variant="outline" onPress={handleGoBack} />
-            </View>
-
+            <PrimaryButton
+              title="JÁ TENHO CONTA"
+              variant="outline"
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)")}
+              disabled={enviando}
+            />
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
@@ -189,169 +253,148 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  scrollContent: {
+  scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: 60, 
-    paddingTop: Platform.OS === 'ios' ? 50 : 30, 
+    paddingBottom: 48,
+    paddingTop: Platform.OS === "ios" ? 52 : 32,
+  },
+  toast: {
+    position: "absolute",
+    top: Platform.OS === "ios" ? 56 : 36,
+    left: 16,
+    right: 16,
+    zIndex: 999,
+    borderRadius: 14,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  toastSuccess: {
+    backgroundColor: "#0d2010",
+    borderWidth: 1,
+    borderColor: "#4CAF50",
+  },
+  toastError: {
+    backgroundColor: "#2a1010",
+    borderWidth: 1,
+    borderColor: "#EF4444",
+  },
+  toastText: {
+    flex: 1,
+    color: Colors.textPrimary,
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
   },
   topBar: {
-    width: '100%',
-    alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 20,
   },
   backButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: Colors.surfaceDark,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  
-  header: {
-    alignItems: 'center',
-    marginBottom: 24,
+  hero: {
+    marginBottom: 28,
   },
-  logoImage: {
-    width: 80,
-    height: 80,
-  },
-  placeholderLogo: {
-    width: 85,
-    height: 85,
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 45,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 3,
-    borderColor: Colors.primary,
-    marginBottom: 12,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.6,
-    shadowRadius: 10,
-    elevation: 8,
-  },
-  appTitle: {
+  heroTitle: {
     color: Colors.primary,
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    textShadowColor: 'rgba(245, 166, 35, 0.4)',
+    fontSize: 28,
+    fontWeight: "bold",
+    marginBottom: 6,
+    textShadowColor: "rgba(245, 166, 35, 0.3)",
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
-  subtitle: {
+  heroSub: {
     color: Colors.textSecondary,
     fontSize: 14,
-    fontWeight: '500',
-    textAlign: 'center',
   },
-
-
-  formCard: {
+  section: {
     backgroundColor: Colors.surfaceDark,
+    borderRadius: 16,
     padding: 20,
-    borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
-    width: "100%",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
     marginBottom: 16,
   },
-  sectionIcon: {
-    fontSize: 16,
-    marginRight: 8,
+  sectionLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+    marginBottom: 16,
   },
-  sectionTitle: {
-    color: Colors.primary,
+  fieldLabel: {
+    color: Colors.textSecondary,
     fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontWeight: "600",
+    marginBottom: 4,
+    marginLeft: 4,
+    letterSpacing: 0.3,
   },
-  
-
-  genderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
+  passwordWrap: {
+    position: "relative",
   },
-  genderButton: {
+  passwordInput: {
+    paddingRight: 48,
+  },
+  eyeButton: {
+    position: "absolute",
+    right: 16,
+    top: 0,
+    bottom: 16,
+    justifyContent: "center",
+  },
+  generoRow: {
+    flexDirection: "row",
+    gap: 8,
+  },
+  generoButton: {
     flex: 1,
-    height: 48,
-    flexDirection: 'row',
-    backgroundColor: Colors.surface, 
+    paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
     borderColor: Colors.border,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginHorizontal: 4,
+    backgroundColor: Colors.surface,
+    alignItems: "center",
+    gap: 4,
   },
-  genderButtonActive: {
-    backgroundColor: Colors.primary,
+  generoButtonAtivo: {
+    backgroundColor: "rgba(245, 166, 35, 0.12)",
     borderColor: Colors.primary,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 8,
-    elevation: 6,
   },
-  genderTextIcon: {
-    fontSize: 14,
-    marginRight: 6,
+  generoIcon: {
+    fontSize: 18,
+    color: Colors.textPrimary,
   },
-  genderText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-  genderTextActive: {
-    color: Colors.background, 
-  },
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  halfInputContainer: {
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  
-
-  infoContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 8,
-    marginBottom: 24,
-  },
-  infoIcon: {
-    fontSize: 14,
-    marginRight: 6,
-  },
-  infoText: {
-    color: Colors.textSecondary,
+  generoLabel: {
+    color: Colors.textMuted,
     fontSize: 12,
+    fontWeight: "600",
   },
-  actionsContainer: {
-    alignItems: 'center',
+  generoLabelAtivo: {
+    color: Colors.primary,
   },
-  
-  dividerContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  actions: {
+    marginTop: 4,
+  },
+  divider: {
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 16,
   },
   dividerLine: {
@@ -363,6 +406,7 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     paddingHorizontal: 12,
     fontSize: 12,
-    textTransform: 'uppercase',
+    textTransform: "uppercase",
+    letterSpacing: 1,
   },
 });

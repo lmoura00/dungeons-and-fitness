@@ -8,134 +8,192 @@ import {
   Image,
   TouchableOpacity,
   Platform,
+  ActivityIndicator,
 } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
+import { trpc } from "../../lib/trpc";
+
+const XP_POR_NIVEL = 3000;
+
+function calcularPatamar(nivel: number): string {
+  if (nivel <= 10) return "Iniciante";
+  if (nivel <= 20) return "Aventureiro";
+  if (nivel <= 30) return "Herói";
+  return "Lendário";
+}
+
+const ATRIBUTOS = [
+  { key: "strength", label: "FOR", icon: "💪" },
+  { key: "agility",  label: "AGI", icon: "⚡" },
+  { key: "focus",    label: "FOC", icon: "🎯" },
+  { key: "energy",   label: "VIT", icon: "❤️" },
+] as const;
 
 const NAV_ITEMS = [
-  { id: "dashboard", title: "Dashboard", icon: "home", route: "/(tabs)/dashboard" },
-  { id: "quests", title: "Missões", icon: "list", route: "/(tabs)/quests" },
-  { id: "log", title: "Registrar", icon: "add-circle", route: "/(tabs)/log-activity" },
-  { id: "profile", title: "Perfil", icon: "person", route: "/(tabs)/profile" },
-];
+  { id: "dashboard",    label: "Dashboard", icon: "home",        route: "/(tabs)/dashboard" },
+  { id: "quests",       label: "Missões",   icon: "shield",      route: "/(tabs)/quests" },
+  { id: "log-activity", label: "Registrar", icon: "add-circle",  route: "/(tabs)/log-activity" },
+  { id: "profile",      label: "Perfil",    icon: "person",      route: "/(tabs)/profile" },
+] as const;
 
 export default function DashboardScreen() {
-  const handleNavPress = (route: string) => {
-    if (route !== "/(tabs)/dashboard") {
-      router.push(route as any);
-    }
-  };
+  const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
+  const { data: streak } = trpc.streak.atual.useQuery();
 
-  const handleFirstQuest = () => {
-    router.push("/(tabs)/quests");
-  };
+  const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
+  const xpNoNivel = personagem ? personagem.currentXp % XP_POR_NIVEL : 0;
+  const progresso = xpNoNivel / XP_POR_NIVEL;
+  const patamar = calcularPatamar(nivel);
+  const diasSequencia = streak?.diasSequencia ?? 0;
+  const streakAtivo = diasSequencia > 0;
+  const attrs = personagem?.attributes;
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* 1. HEADER COM SISTEMA DE FOGUEIRA (STREAK) */}
       <View style={styles.topHeader}>
         <View style={styles.headerLeft}>
           <Image
             source={require("../../../assets/logo_df_circulo 1.png")}
             style={styles.smallLogo}
           />
-          <Text style={styles.headerSubtitle}>Humano • Aprendiz</Text>
+          <View>
+            <Text style={styles.headerGreeting}>Bem-vindo de volta,</Text>
+            <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
+          </View>
         </View>
-        <View style={styles.streakBadge}>
+        <TouchableOpacity style={[styles.streakBadge, streakAtivo && styles.streakBadgeAtivo]}>
           <Text style={styles.streakIcon}>🔥</Text>
-          <Text style={styles.streakText}>0 Dias</Text>
-        </View>
+          <Text style={[styles.streakText, streakAtivo && styles.streakTextAtivo]}>
+            {diasSequencia}d
+          </Text>
+        </TouchableOpacity>
       </View>
 
-      <View style={styles.navContainer}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.navScroll}
-        >
-          {NAV_ITEMS.map((item) => {
-            const isActive = item.id === "dashboard";
-            return (
-              <TouchableOpacity
-                key={item.id}
-                style={[styles.navButton, isActive && styles.navButtonActive]}
-                onPress={() => handleNavPress(item.route)}
-              >
-                <Ionicons
-                  name={item.icon as any}
-                  size={16}
-                  color={isActive ? Colors.background : Colors.primary}
-                  style={styles.navIcon}
-                />
-                <Text style={[styles.navText, isActive && styles.navTextActive]}>
-                  {item.title}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.nav}
+        style={styles.navContainer}
+      >
+        {NAV_ITEMS.map((item) => {
+          const active = item.id === "dashboard";
+          return (
+            <TouchableOpacity
+              key={item.id}
+              style={[styles.navButton, active && styles.navButtonActive]}
+              onPress={() => { if (!active) router.push(item.route as any); }}
+              activeOpacity={0.8}
+            >
+              <Ionicons
+                name={item.icon as any}
+                size={14}
+                color={active ? Colors.background : Colors.primary}
+              />
+              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        
-        {/* MENSAGEM DINÂMICA DE BOAS-VINDAS */}
-        <Text style={styles.welcomeGreeting}>A guilda aguarda seus feitos,</Text>
-        
+        {/* Character Card */}
         <View style={styles.characterCard}>
-          <View style={styles.avatarGlow}>
-            <View style={styles.avatarCircle}>
-              <Image
-                source={{ uri: "https://api.dicebear.com/8.x/adventurer/png?seed=Hero&backgroundColor=F5A623" }}
-                style={styles.avatarImage}
-              />
+          <View style={styles.cardLeft}>
+            <View style={styles.avatarGlow}>
+              <View style={styles.avatarCircle}>
+                {isLoading ? (
+                  <ActivityIndicator color={Colors.primary} />
+                ) : (
+                  <Image
+                    source={{
+                      uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${personagem?.name ?? "Hero"}&backgroundColor=F5A623`,
+                    }}
+                    style={styles.avatarImage}
+                  />
+                )}
+              </View>
             </View>
           </View>
-          
-          <Text style={styles.characterName}>Aventureiro</Text>
-          <Text style={styles.characterClass}>Humano • Aprendiz</Text>
 
-          <View style={styles.badgeContainer}>
-            <Text style={styles.badgeText}>Iniciante</Text>
+          <View style={styles.cardRight}>
+            <View style={styles.patamarBadge}>
+              <Text style={styles.patamarBadgeText}>{patamar}</Text>
+            </View>
+            <Text style={styles.characterName} numberOfLines={1}>
+              {personagem?.name ?? "—"}
+            </Text>
+            <Text style={styles.characterSub}>
+              {isLoading ? "..." : `${personagem?.race?.name ?? "—"} · ${personagem?.class?.name ?? "—"}`}
+            </Text>
+            <Text style={styles.levelLabel}>Nível {nivel}</Text>
           </View>
         </View>
 
-        <View style={styles.levelSection}>
-          <View style={styles.levelHeader}>
-            <Text style={styles.levelTitle}>Nível 1</Text>
-            <Text style={styles.xpText}>0 / 1.000 XP</Text>
+        {/* XP Bar */}
+        <View style={styles.xpSection}>
+          <View style={styles.xpHeader}>
+            <Text style={styles.xpTitle}>Experiência</Text>
+            <Text style={styles.xpValue}>
+              {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+            </Text>
           </View>
-          
-          <ProgressBar progress={0} />
-          
-          {/* 2. TEASER DA CLASSE (Cenoura na Vara) */}
-          <Text style={styles.xpRemainingText}>Alcance o Nível 5 para o Despertar da sua Classe</Text>
+          <ProgressBar progress={progresso} />
+          {nivel < 5 && (
+            <Text style={styles.xpHint}>Nível 5 para desbloquear sua Classe</Text>
+          )}
         </View>
 
+        {/* Stats */}
         <View style={styles.statsRow}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>0</Text>
+            <Ionicons name="star" size={18} color={Colors.primary} style={styles.statIcon} />
+            <Text style={styles.statValue}>{personagem?.currentXp?.toLocaleString("pt-BR") ?? "0"}</Text>
             <Text style={styles.statLabel}>XP Total</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>Calorias</Text>
+            <Text style={styles.statEmoji}>🔥</Text>
+            <Text style={styles.statValue}>{diasSequencia}</Text>
+            <Text style={styles.statLabel}>Streak</Text>
           </View>
         </View>
 
-        {/* 3. CALL TO ACTION IMEDIATO (Missão de Boas-vindas) */}
-        <TouchableOpacity style={styles.firstQuestCard} onPress={handleFirstQuest} activeOpacity={0.8}>
-          <View style={styles.firstQuestIconContainer}>
-            <Text style={styles.firstQuestIcon}>⚔️</Text>
+        {/* Attributes */}
+        {attrs && (
+          <View style={styles.attrsCard}>
+            <Text style={styles.sectionTitle}>ATRIBUTOS</Text>
+            <View style={styles.attrsGrid}>
+              {ATRIBUTOS.map((a) => (
+                <View key={a.key} style={styles.attrItem}>
+                  <Text style={styles.attrIcon}>{a.icon}</Text>
+                  <Text style={styles.attrValue}>{attrs[a.key]}</Text>
+                  <Text style={styles.attrLabel}>{a.label}</Text>
+                </View>
+              ))}
+            </View>
           </View>
-          <View style={styles.firstQuestTextContainer}>
-            <Text style={styles.firstQuestTitle}>Sua Primeira Batalha</Text>
-            <Text style={styles.firstQuestSubtitle}>Complete uma missão agora para ganhar seus primeiros pontos de XP!</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={24} color={Colors.primary} />
-        </TouchableOpacity>
+        )}
 
+        {/* Quick Actions */}
+        <Text style={styles.sectionTitle}>AÇÕES RÁPIDAS</Text>
+        <TouchableOpacity
+          style={styles.actionCard}
+          onPress={() => router.push("/(tabs)/quests")}
+          activeOpacity={0.8}
+        >
+          <View style={styles.actionIcon}>
+            <Text style={styles.actionEmoji}>⚔️</Text>
+          </View>
+          <View style={styles.actionText}>
+            <Text style={styles.actionTitle}>Missões do Dia</Text>
+            <Text style={styles.actionSub}>Complete para ganhar XP e manter o streak</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -149,147 +207,293 @@ const styles = StyleSheet.create({
   topHeader: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between", 
-    paddingHorizontal: 24,
+    justifyContent: "space-between",
+    paddingHorizontal: 20,
     paddingTop: Platform.OS === "ios" ? 10 : 50,
-    marginBottom: 16,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   headerLeft: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
   },
   smallLogo: {
-    width: 32,
-    height: 32,
-    marginRight: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
   },
-  headerSubtitle: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "600",
+  headerGreeting: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: "500",
   },
- 
+  headerName: {
+    color: Colors.textPrimary,
+    fontSize: 16,
+    fontWeight: "bold",
+  },
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surfaceDark,
+    gap: 4,
+    backgroundColor: Colors.surface,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  streakBadgeAtivo: {
+    borderColor: "#FF6B35",
+    backgroundColor: "rgba(255, 107, 53, 0.12)",
+  },
   streakIcon: {
     fontSize: 14,
-    marginRight: 4,
-    opacity: 0.5,
   },
   streakText: {
     color: Colors.textSecondary,
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: "bold",
   },
-  
-  navContainer: { marginBottom: 24 },
-  navScroll: { paddingHorizontal: 24, gap: 12 },
+  streakTextAtivo: {
+    color: "#FF6B35",
+  },
+  navContainer: {
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  nav: {
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    gap: 8,
+  },
   navButton: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: Colors.surfaceDark,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
+    backgroundColor: Colors.surfaceDark,
   },
   navButtonActive: {
     backgroundColor: Colors.primary,
     borderColor: Colors.primary,
   },
-  navIcon: { marginRight: 6 },
-  navText: { color: Colors.primary, fontSize: 14, fontWeight: "600" },
-  navTextActive: { color: Colors.background },
-  
-  content: { paddingHorizontal: 24, paddingBottom: 40 },
-  
-  welcomeGreeting: {
-    color: Colors.textSecondary,
-    fontSize: 16,
-    textAlign: "center",
-    marginBottom: 16,
-    fontStyle: "italic",
+  navLabel: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
   },
-
+  navLabelActive: {
+    color: Colors.background,
+  },
+  content: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    gap: 16,
+  },
   characterCard: {
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
-    padding: 32,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    marginBottom: 24,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    elevation: 5,
-  },
-  avatarGlow: { padding: 6, borderRadius: 75, backgroundColor: "rgba(245, 166, 35, 0.15)", marginBottom: 16 },
-  avatarCircle: { width: 120, height: 120, borderRadius: 60, backgroundColor: Colors.surface, justifyContent: "center", alignItems: "center", borderWidth: 3, borderColor: Colors.primary, overflow: "hidden" },
-  avatarImage: { width: 120, height: 120 },
-  characterName: { color: Colors.textPrimary, fontSize: 24, fontWeight: "bold", marginBottom: 4 },
-  characterClass: { color: Colors.textSecondary, fontSize: 14, marginBottom: 16 },
-  badgeContainer: { backgroundColor: Colors.surface, paddingVertical: 6, paddingHorizontal: 16, borderRadius: 12, borderWidth: 1, borderColor: Colors.primary },
-  badgeText: { color: Colors.primary, fontSize: 12, fontWeight: "bold", textTransform: "uppercase", letterSpacing: 1 },
-  
-  levelSection: { marginBottom: 24 },
-  levelHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 12 },
-  levelTitle: { color: Colors.textPrimary, fontSize: 20, fontWeight: "bold" },
-  xpText: { color: Colors.primary, fontSize: 14, fontWeight: "600" },
-  xpRemainingText: { color: Colors.primary, fontSize: 12, marginTop: 8, textAlign: "right", fontWeight: "600" }, 
-  
-  statsRow: { flexDirection: "row", justifyContent: "space-between", gap: 16, marginBottom: 24 }, 
-  statCard: { flex: 1, backgroundColor: Colors.surfaceDark, borderRadius: 16, padding: 20, alignItems: "center", borderWidth: 1, borderColor: Colors.border },
-  statValue: { color: Colors.primary, fontSize: 24, fontWeight: "bold", marginBottom: 4 },
-  statLabel: { color: Colors.textSecondary, fontSize: 12 },
-
- 
-  firstQuestCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(245, 166, 35, 0.1)", 
-    borderRadius: 16,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 20,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.primary,
+    gap: 16,
   },
-  firstQuestIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+  cardLeft: {
+    alignItems: "center",
+  },
+  avatarGlow: {
+    padding: 3,
+    borderRadius: 44,
+    backgroundColor: "rgba(245, 166, 35, 0.15)",
+  },
+  avatarCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: Colors.surface,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 2,
+    borderColor: Colors.primary,
+    overflow: "hidden",
+  },
+  avatarImage: { width: 80, height: 80 },
+  cardRight: {
+    flex: 1,
+    gap: 4,
+  },
+  patamarBadge: {
+    alignSelf: "flex-start",
+    backgroundColor: "rgba(245, 166, 35, 0.15)",
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "rgba(245, 166, 35, 0.3)",
+    marginBottom: 4,
+  },
+  patamarBadgeText: {
+    color: Colors.primary,
+    fontSize: 10,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  characterName: {
+    color: Colors.textPrimary,
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  characterSub: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+  },
+  levelLabel: {
+    color: Colors.primary,
+    fontSize: 14,
+    fontWeight: "700",
+    marginTop: 4,
+  },
+  xpSection: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 10,
+  },
+  xpHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  xpTitle: {
+    color: Colors.textSecondary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  xpValue: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "bold",
+  },
+  xpHint: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    textAlign: "right",
+    marginTop: 2,
+  },
+  statsRow: {
+    flexDirection: "row",
+    gap: 12,
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 16,
+    padding: 16,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 4,
+  },
+  statIcon: {
+    marginBottom: 2,
+  },
+  statEmoji: {
+    fontSize: 18,
+    marginBottom: 2,
+  },
+  statValue: {
+    color: Colors.textPrimary,
+    fontSize: 22,
+    fontWeight: "bold",
+  },
+  statLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  attrsCard: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 14,
+  },
+  attrsGrid: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  attrItem: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  attrIcon: {
+    fontSize: 20,
+  },
+  attrValue: {
+    color: Colors.textPrimary,
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  attrLabel: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: "700",
+    letterSpacing: 1,
+  },
+  sectionTitle: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1.5,
+  },
+  actionCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(245, 166, 35, 0.08)",
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: "rgba(245, 166, 35, 0.25)",
+    gap: 14,
+  },
+  actionIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
     backgroundColor: Colors.surfaceDark,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.primary,
-    marginRight: 16,
+    borderColor: Colors.border,
   },
-  firstQuestIcon: {
-    fontSize: 20,
-  },
-  firstQuestTextContainer: {
-    flex: 1,
-    marginRight: 8,
-  },
-  firstQuestTitle: {
+  actionEmoji: { fontSize: 20 },
+  actionText: { flex: 1 },
+  actionTitle: {
     color: Colors.primary,
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: "bold",
-    marginBottom: 4,
+    marginBottom: 3,
   },
-  firstQuestSubtitle: {
+  actionSub: {
     color: Colors.textSecondary,
     fontSize: 12,
-    lineHeight: 18,
+    lineHeight: 17,
   },
 });

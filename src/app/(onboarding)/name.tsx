@@ -64,7 +64,7 @@ export default function NameScreen() {
           <View style={styles.header}>
             <TouchableOpacity
               style={styles.backButton}
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/(onboarding)/choose-race")}
             >
               <Ionicons name="arrow-back" size={20} color={Colors.primary} />
             </TouchableOpacity>

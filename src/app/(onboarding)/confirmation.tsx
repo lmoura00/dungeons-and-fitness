@@ -8,16 +8,19 @@ import {
   ScrollView,
   Image,
   Platform,
+  Alert,
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { PrimaryButton } from "../../components/PrimaryButton";
+import { limparNovaContaPendente } from "../../lib/auth";
+import { trpc } from "../../lib/trpc";
 
 const RACE_IMAGES: Record<string, any> = {
-  human: require("../../../assets/race-human.png"),
-  dwarf: require("../../../assets/race-dwarf.png"),
-  elf: require("../../../assets/race-elf.png"),
+  Humano: require("../../../assets/race-human.png"),
+  Anão: require("../../../assets/race-dwarf.png"),
+  Elfo: require("../../../assets/race-elf.png"),
 };
 
 export default function ConfirmationScreen() {
@@ -27,13 +30,28 @@ export default function ConfirmationScreen() {
     characterName: string;
     avatarSeed?: string;
   }>();
-  const raceId = params.raceId || "dwarf";
+  const raceId = params.raceId || "";
   const raceName = params.raceName || "Anão";
   const characterName = params.characterName || "Aventureiro";
   const avatarSeed = params.avatarSeed;
 
+  const { data: classes } = trpc.classes.listar.useQuery();
+
+  const criarMutation = trpc.personagens.criar.useMutation({
+    onSuccess: () => {
+      limparNovaContaPendente();
+      router.replace("/(tabs)/dashboard");
+    },
+    onError: (e) => Alert.alert("Erro ao criar personagem", e.message),
+  });
+
   const handleFinish = () => {
-    router.replace("/(tabs)/dashboard");
+    const aprendiz = classes?.find((c) => c.unlockLevel === 0);
+    if (!aprendiz) {
+      Alert.alert("Erro", "Dados de classe não carregados. Tente novamente.");
+      return;
+    }
+    criarMutation.mutate({ nome: characterName, racaId: raceId, classeId: aprendiz.id });
   };
 
   return (
@@ -42,7 +60,7 @@ export default function ConfirmationScreen() {
         <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
-            onPress={() => router.back()}
+            onPress={() => router.canGoBack() ? router.back() : router.replace("/(onboarding)/choose-race")}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
             <Ionicons name="arrow-back" size={24} color={Colors.primary} />
@@ -65,7 +83,7 @@ export default function ConfirmationScreen() {
                       ? {
                           uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${avatarSeed}&backgroundColor=F5A623`,
                         }
-                      : RACE_IMAGES[raceId]
+                      : RACE_IMAGES[raceName]
                   }
                   style={styles.avatarImage}
                 />
@@ -105,7 +123,11 @@ export default function ConfirmationScreen() {
             <View style={styles.dot} />
             <View style={[styles.dot, styles.dotActive]} />
           </View>
-          <PrimaryButton title="INICIAR AVENTURA" onPress={handleFinish} />
+          <PrimaryButton
+            title={criarMutation.isPending ? "CRIANDO..." : "INICIAR AVENTURA"}
+            onPress={handleFinish}
+            disabled={criarMutation.isPending}
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
