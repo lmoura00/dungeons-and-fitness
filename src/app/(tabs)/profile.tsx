@@ -8,15 +8,16 @@ import {
   Image,
   TouchableOpacity,
   Platform,
-  ActivityIndicator,
   Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
 import { trpc } from "../../lib/trpc";
 import { limparSessao } from "../../lib/auth";
+import { getAvatar } from "../../utils/getAvatar";
 
 const XP_POR_NIVEL = 3000;
 
@@ -28,31 +29,61 @@ function calcularPatamar(nivel: number): string {
 }
 
 const ATRIBUTOS = [
-  { key: "strength", label: "Força",      icon: "💪", color: "#F44336" },
-  { key: "agility",  label: "Agilidade",  icon: "⚡", color: "#2196F3" },
-  { key: "focus",    label: "Foco",        icon: "🎯", color: "#9C27B0" },
-  { key: "energy",   label: "Vitalidade", icon: "❤️", color: "#4CAF50" },
+  { key: "strength", label: "Força",      ionicon: "barbell", color: Colors.statStrength },
+  { key: "agility",  label: "Agilidade",  ionicon: "flash",   color: Colors.statAgility  },
+  { key: "focus",    label: "Foco",        ionicon: "eye",     color: Colors.statFocus    },
+  { key: "energy",   label: "Vitalidade", ionicon: "heart",   color: Colors.statVitality },
 ] as const;
 
 export default function ProfileScreen() {
+  const utils = trpc.useUtils();
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
+  const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: conquistas } = trpc.conquistasUsuario.minhasConquistas.useQuery();
+  const { data: todasClasses } = trpc.classes.listar.useQuery();
 
   const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
   const xpNoNivel = personagem ? personagem.currentXp % XP_POR_NIVEL : 0;
   const progresso = xpNoNivel / XP_POR_NIVEL;
   const patamar = calcularPatamar(nivel);
   const attrs = personagem?.attributes;
+  const classeAtualId = personagem?.class?.id;
+  const podeEscolherClasse = nivel >= 5;
+
+  const trocarClasseMutation = trpc.personagens.trocarClasse.useMutation({
+    onSuccess: () => utils.personagens.meuPersonagem.invalidate(),
+    onError: (e) => Alert.alert("Erro", e.message),
+  });
+
+  const handleTrocarClasse = (classe: { id: string; name: string; unlockLevel: number }) => {
+    if (classe.id === classeAtualId) return;
+    if (!podeEscolherClasse || classe.unlockLevel > nivel) return;
+    Alert.alert(
+      "Trocar de Classe",
+      `Deseja mudar para ${classe.name}?`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Confirmar", onPress: () => trocarClasseMutation.mutate({ classeId: classe.id }) },
+      ],
+    );
+  };
 
   const handleSair = () => {
     Alert.alert("Sair", "Deseja encerrar sua sessão?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: () => limparSessao() },
+      { text: "Sair", style: "destructive", onPress: async () => { await limparSessao(); router.replace("/(auth)"); } },
     ]);
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={[Colors.surface, Colors.background]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -72,18 +103,11 @@ export default function ProfileScreen() {
         {/* Avatar Card */}
         <View style={styles.avatarCard}>
           <View style={styles.avatarGlow}>
-            <View style={styles.avatarCircle}>
-              {isLoading ? (
-                <ActivityIndicator color={Colors.primary} />
-              ) : (
-                <Image
-                  source={{
-                    uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${personagem?.name ?? "Hero"}&backgroundColor=F5A623`,
-                  }}
-                  style={styles.avatarImage}
-                />
-              )}
-            </View>
+            <Image
+              source={getAvatar(personagem?.class?.name, personagem?.race?.name, usuario?.gender)}
+              style={styles.avatarImage}
+              resizeMode="contain"
+            />
           </View>
           <Text style={styles.characterName}>{personagem?.name ?? "Aventureiro"}</Text>
           <Text style={styles.characterSub}>
@@ -109,6 +133,71 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Class Selection */}
+        {todasClasses && (
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>CLASSE</Text>
+              {!podeEscolherClasse && (
+                <View style={styles.classLockHint}>
+                  <Ionicons name="lock-closed" size={11} color={Colors.textMuted} />
+                  <Text style={styles.classLockHintText}>Desbloqueada no nível 5</Text>
+                </View>
+              )}
+            </View>
+
+            {todasClasses
+              .filter((c) => c.unlockLevel === 0 || c.unlockLevel <= 5)
+              .sort((a, b) => a.unlockLevel - b.unlockLevel)
+              .map((classe) => {
+                const isAtual = classe.id === classeAtualId;
+                const isLocked = !podeEscolherClasse && classe.unlockLevel > 0;
+                const isSelectable = podeEscolherClasse && classe.unlockLevel <= nivel && !isAtual;
+                return (
+                  <TouchableOpacity
+                    key={classe.id}
+                    style={[
+                      styles.classeRow,
+                      isAtual && styles.classeRowAtual,
+                      isLocked && styles.classeRowLocked,
+                    ]}
+                    onPress={() => handleTrocarClasse(classe)}
+                    activeOpacity={isSelectable ? 0.7 : 1}
+                    disabled={isLocked || isAtual}
+                  >
+                    <Image
+                      source={getAvatar(classe.name, personagem?.race?.name, usuario?.gender)}
+                      style={[styles.classeAvatar, isLocked && styles.classeAvatarLocked]}
+                      resizeMode="contain"
+                    />
+                    <View style={styles.classeInfo}>
+                      <Text style={[styles.classeName, isLocked && styles.classeNameLocked]}>
+                        {classe.name}
+                      </Text>
+                      {classe.xpBonusPct > 0 && (
+                        <Text style={[styles.classeBonus, isLocked && styles.classeBonusLocked]}>
+                          +{Math.round(classe.xpBonusPct * 100)}% XP de {classe.xpBonusType}
+                        </Text>
+                      )}
+                    </View>
+                    {isAtual ? (
+                      <View style={styles.classeAtualBadge}>
+                        <Text style={styles.classeAtualBadgeText}>Atual</Text>
+                      </View>
+                    ) : isLocked ? (
+                      <View style={styles.classeLockBadge}>
+                        <Ionicons name="lock-closed" size={11} color={Colors.textMuted} />
+                        <Text style={styles.classeLockText}>Nível 5</Text>
+                      </View>
+                    ) : (
+                      <Ionicons name="chevron-forward" size={16} color={Colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+          </View>
+        )}
+
         {/* Attributes */}
         {attrs && (
           <View style={styles.card}>
@@ -117,7 +206,7 @@ export default function ProfileScreen() {
               {ATRIBUTOS.map((a) => (
                 <View key={a.key} style={styles.attrRow}>
                   <View style={styles.attrLeft}>
-                    <Text style={styles.attrEmoji}>{a.icon}</Text>
+                    <Ionicons name={a.ionicon as any} size={16} color={a.color} />
                     <Text style={styles.attrLabel}>{a.label}</Text>
                   </View>
                   <View style={styles.attrRight}>
@@ -142,7 +231,11 @@ export default function ProfileScreen() {
             <View style={styles.conquistasList}>
               {conquistas.filter((c) => c.achievement != null).map((c) => (
                 <View key={c.id} style={styles.conquistaItem}>
-                  <Text style={styles.conquistaIcon}>{c.achievement.icon ?? "🏆"}</Text>
+                  {c.achievement.icon ? (
+                    <Text style={styles.conquistaIconEmoji}>{c.achievement.icon}</Text>
+                  ) : (
+                    <Ionicons name="trophy" size={24} color={Colors.gold} />
+                  )}
                   <View style={styles.conquistaInfo}>
                     <Text style={styles.conquistaTitle}>{c.achievement.title}</Text>
                     <Text style={styles.conquistaDesc}>{c.achievement.description}</Text>
@@ -195,7 +288,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surfaceDark,
@@ -213,31 +306,32 @@ const styles = StyleSheet.create({
   },
   avatarCard: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
+    borderRadius: 10,
     padding: 28,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.border,
     gap: 8,
   },
   avatarGlow: {
-    padding: 4,
-    borderRadius: 60,
-    backgroundColor: "rgba(245, 166, 35, 0.12)",
+    padding: 3,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: Colors.primaryDark,
+    backgroundColor: Colors.primaryMuted,
     marginBottom: 4,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
-  avatarCircle: {
+  avatarImage: {
     width: 100,
     height: 100,
-    borderRadius: 50,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    overflow: "hidden",
+    borderRadius: 9999,
+    backgroundColor: Colors.surfaceDark,
   },
-  avatarImage: { width: 100, height: 100 },
   characterName: {
     color: Colors.textPrimary,
     fontSize: 22,
@@ -248,12 +342,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
   patamarBadge: {
-    backgroundColor: "rgba(245, 166, 35, 0.12)",
+    backgroundColor: Colors.primaryMuted,
     paddingVertical: 5,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 6,
     borderWidth: 1,
-    borderColor: "rgba(245, 166, 35, 0.3)",
+    borderColor: Colors.primaryDark,
     marginTop: 4,
   },
   patamarBadgeText: {
@@ -264,7 +358,7 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
+    borderRadius: 10,
     padding: 18,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -282,7 +376,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   cardValue: {
-    color: Colors.primary,
+    color: Colors.primaryBase,
     fontSize: 13,
     fontWeight: "bold",
   },
@@ -315,7 +409,6 @@ const styles = StyleSheet.create({
     gap: 8,
     width: 110,
   },
-  attrEmoji: { fontSize: 16 },
   attrLabel: {
     color: Colors.textSecondary,
     fontSize: 13,
@@ -338,6 +431,89 @@ const styles = StyleSheet.create({
     width: 28,
     textAlign: "right",
   },
+  classLockHint: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  classLockHintText: {
+    color: Colors.textMuted,
+    fontSize: 11,
+  },
+  classeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    paddingVertical: 10,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+  },
+  classeRowAtual: {
+    backgroundColor: Colors.primaryMuted,
+    paddingHorizontal: 10,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
+  },
+  classeRowLocked: {
+    opacity: 0.45,
+  },
+  classeAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: Colors.surfaceDark,
+  },
+  classeAvatarLocked: {
+    tintColor: Colors.textMuted,
+  },
+  classeInfo: {
+    flex: 1,
+    gap: 2,
+  },
+  classeName: {
+    color: Colors.textPrimary,
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  classeNameLocked: {
+    color: Colors.textMuted,
+  },
+  classeBonus: {
+    color: Colors.primaryBase,
+    fontSize: 11,
+  },
+  classeBonusLocked: {
+    color: Colors.textMuted,
+  },
+  classeAtualBadge: {
+    backgroundColor: Colors.primaryMuted,
+    paddingVertical: 3,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
+  },
+  classeAtualBadgeText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: "bold",
+  },
+  classeLockBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.surface,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  classeLockText: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: "600",
+  },
   emptyText: {
     color: Colors.textMuted,
     fontSize: 13,
@@ -355,7 +531,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  conquistaIcon: { fontSize: 24 },
+  conquistaIconEmoji: { fontSize: 24 },
   conquistaInfo: { flex: 1 },
   conquistaTitle: {
     color: Colors.textPrimary,

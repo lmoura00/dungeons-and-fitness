@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   View,
   Text,
@@ -9,48 +9,57 @@ import {
   Platform,
   ScrollView,
   Image,
-  Modal, 
 } from "react-native";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
+import { trpc } from "../../lib/trpc";
+import { getAvatarByKey, getAvatarsByRace } from "../../utils/getAvatar";
 
-
-const RACE_IMAGES: Record<string, any> = {
-  human: require("../../../assets/race-human.png"),
-  dwarf: require("../../../assets/race-dwarf.png"),
-  elf: require("../../../assets/race-elf.png"),
+const CLASS_LABELS: Record<string, string> = {
+  APRENDIZ: "Aprendiz", GUERREIRO: "Guerreiro",
+  MAGO: "Mago", MONGE: "Monge", PATRULHEIRO: "Patrulheiro",
 };
 
 export default function NameScreen() {
   const params = useLocalSearchParams<{ raceId: string; raceName: string }>();
-  const raceId = params.raceId || "dwarf";
+  const raceId   = params.raceId   || "dwarf";
   const raceName = params.raceName || "Anão";
 
   const [characterName, setCharacterName] = useState("");
-  const [errorMessage, setErrorMessage] = useState("");
-  const [avatarSeed, setAvatarSeed] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage]   = useState("");
+  const [selectedKey, setSelectedKey]     = useState<string | null>(null);
 
-  
-  const [isHelpVisible, setHelpVisible] = useState(false);
+  const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
+  // Only Aprendiz avatars during onboarding — class is locked until level 5
+  const avatarList = useMemo(
+    () => getAvatarsByRace(raceName).filter(({ key }) => key.includes("_APRENDIZ_")),
+    [raceName],
+  );
 
-  const handleGenerateAvatar = () => {
-    const baseName = characterName.trim() || "Hero";
-    const randomSuffix = Math.floor(Math.random() * 1000);
-    setAvatarSeed(`${baseName}-${randomSuffix}`);
-  };
+  // Set initial selection based on user gender once loaded
+  useEffect(() => {
+    if (!usuario || selectedKey) return;
+    const g   = usuario.gender?.startsWith("f") ? "F" : "M";
+    const rNorm = raceName
+      .normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().trim();
+    const target = `${rNorm}_APRENDIZ_${g}`;
+    const found  = avatarList.find((a) => a.key === target);
+    setSelectedKey(found ? found.key : avatarList[0]?.key ?? null);
+  }, [usuario]);
+
+  const currentSource = getAvatarByKey(selectedKey ?? avatarList[0]?.key);
 
   const handleNext = () => {
     if (characterName.trim() === "") {
       setErrorMessage("Por favor, dê um nome ao seu aventureiro.");
       return;
     }
-
     router.push({
       pathname: "/(onboarding)/confirmation",
-      params: { raceId, raceName, characterName, avatarSeed: avatarSeed || "" },
+      params: { raceId, raceName, characterName, avatarKey: selectedKey ?? "" },
     });
   };
 
@@ -72,46 +81,43 @@ export default function NameScreen() {
 
           <Text style={styles.stepText}>PASSO 2 DE 3</Text>
           <Text style={styles.title}>Crie seu Personagem</Text>
-          <Text style={styles.subtitle}>
-            Escolha um nome épico para sua jornada
-          </Text>
+          <Text style={styles.subtitle}>Escolha um nome épico para sua jornada</Text>
 
+          {/* Avatar grande + picker */}
           <View style={styles.avatarSection}>
             <View style={styles.avatarCircle}>
-              <Image
-                source={
-                  avatarSeed
-                    ? {
-                        uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${avatarSeed}&backgroundColor=F5A623`,
-                      }
-                    : RACE_IMAGES[raceId]
-                }
-                style={styles.avatarImage}
-              />
+              <Image source={currentSource} style={styles.avatarImage} resizeMode="contain" />
             </View>
 
-           
-            <View style={styles.avatarButtonRow}>
-              <TouchableOpacity
-                style={styles.avatarButton}
-                onPress={handleGenerateAvatar}
-              >
-                <Text style={styles.avatarButtonText}>Trocar Avatar</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.helpButton}
-                onPress={() => setHelpVisible(true)}
-              >
-                <Ionicons
-                  name="help-circle-outline"
-                  size={24}
-                  color={Colors.textSecondary}
-                />
-              </TouchableOpacity>
-            </View>
+            <Text style={styles.pickerLabel}>Escolher visual</Text>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.thumbStrip}
+            >
+              {avatarList.map(({ key, source }) => {
+                const parts     = key.split("_");
+                const classeKey = parts[1] ?? "";
+                const genero    = parts[2] ?? "";
+                const active    = selectedKey === key;
+                return (
+                  <TouchableOpacity
+                    key={key}
+                    style={[styles.thumbWrap, active && styles.thumbWrapActive]}
+                    onPress={() => setSelectedKey(key)}
+                    activeOpacity={0.75}
+                  >
+                    <Image source={source} style={styles.thumbImage} resizeMode="contain" />
+                    <Text style={[styles.thumbLabel, active && styles.thumbLabelActive]}>
+                      {genero === "F" ? "Feminino" : "Masculino"}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
           </View>
 
+          {/* Nome */}
           <View style={styles.inputSection}>
             <Text style={styles.label}>Nome do Personagem</Text>
             <CustomInput
@@ -122,11 +128,10 @@ export default function NameScreen() {
                 if (errorMessage) setErrorMessage("");
               }}
             />
-            {errorMessage ? (
-              <Text style={styles.errorText}>{errorMessage}</Text>
-            ) : null}
+            {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
           </View>
 
+          {/* Resumo */}
           <View style={styles.summaryCard}>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Raça</Text>
@@ -134,24 +139,17 @@ export default function NameScreen() {
             </View>
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>Classe Inicial</Text>
-              <Text
-                style={[styles.summaryValue, { color: Colors.textSecondary }]}
-              >
-                🔒 Aprendiz
-              </Text>
+              <View style={styles.lockedValue}>
+                <Ionicons name="lock-closed" size={13} color={Colors.textMuted} />
+                <Text style={[styles.summaryValue, { color: Colors.textSecondary }]}>Aprendiz</Text>
+              </View>
             </View>
           </View>
 
           <View style={styles.infoBox}>
-            <Ionicons
-              name="information-circle"
-              size={20}
-              color={Colors.primary}
-              style={{ marginRight: 8 }}
-            />
+            <Ionicons name="information-circle" size={20} color={Colors.primaryBase} style={{ marginRight: 8 }} />
             <Text style={styles.infoText}>
-              Você começará como Aprendiz. Ao atingir o nível 5, poderá escolher
-              sua classe final.
+              Você começará como Aprendiz. Ao atingir o nível 5, poderá escolher sua classe final.
             </Text>
           </View>
 
@@ -165,206 +163,101 @@ export default function NameScreen() {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
-
-     
-      <Modal
-        animationType="fade"
-        transparent={true}
-        visible={isHelpVisible}
-        onRequestClose={() => setHelpVisible(false)} 
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIconContainer}>
-              <Text style={styles.modalIcon}>🔮</Text>
-            </View>
-            <Text style={styles.modalTitle}>Magia dos Avatares</Text>
-            <Text style={styles.modalText}>
-              Nossos avatares são gerados magicamente através de um portal
-              distante! Cada clique em "Trocar Avatar" cria uma combinação única
-              e exclusiva para o seu aventureiro.
-            </Text>
-            <PrimaryButton
-              title="ENTENDI"
-              onPress={() => setHelpVisible(false)}
-              style={{ marginTop: 8 }}
-            />
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.background },
-  content: { padding: 24, flexGrow: 1 },
-  header: { flexDirection: "row", marginBottom: 16 },
+  content:   { padding: 24, flexGrow: 1 },
+  header:    { flexDirection: "row", marginBottom: 16 },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 40, height: 40, borderRadius: 20,
     backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 1, borderColor: Colors.border,
   },
   stepText: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    letterSpacing: 1,
-    textAlign: "center",
-    marginBottom: 8,
-    fontWeight: "700",
+    color: Colors.textSecondary, fontSize: 12, letterSpacing: 1,
+    textAlign: "center", marginBottom: 8, fontWeight: "700",
   },
   title: {
-    color: Colors.primary,
-    fontSize: 28,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 8,
+    color: Colors.primary, fontSize: 28, fontWeight: "bold",
+    textAlign: "center", marginBottom: 8,
+    textShadowColor: "rgba(232, 148, 34, 0.3)",
+    textShadowOffset: { width: 0, height: 2 }, textShadowRadius: 6,
   },
   subtitle: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textAlign: "center",
-    marginBottom: 32,
+    color: Colors.textSecondary, fontSize: 14,
+    textAlign: "center", marginBottom: 28,
   },
-
-  avatarSection: { alignItems: "center", marginBottom: 32 },
+  avatarSection: { alignItems: "center", marginBottom: 28 },
   avatarCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
+    width: 160, height: 160, borderRadius: 80,
     backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
+    justifyContent: "center", alignItems: "center",
+    borderWidth: 2, borderColor: Colors.primaryBase,
+    overflow: "hidden", marginBottom: 16,
+  },
+  avatarImage: { width: 160, height: 160 },
+  pickerLabel: {
+    color: Colors.textMuted, fontSize: 11, fontWeight: "700",
+    letterSpacing: 1.2, textTransform: "uppercase", marginBottom: 10,
+  },
+  thumbStrip: { paddingHorizontal: 4, gap: 8 },
+  thumbWrap: {
+    alignItems: "center", gap: 4,
+    width: 58,
+    paddingVertical: 6, paddingHorizontal: 3,
+    borderRadius: 10,
+    borderWidth: 1.5, borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+  },
+  thumbWrapActive: {
     borderColor: Colors.primary,
-    marginBottom: 16,
-    overflow: "hidden",
+    backgroundColor: Colors.primaryMuted,
   },
-  avatarImage: { width: 100, height: 100 },
-
-  avatarButtonRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+  thumbImage: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: Colors.surfaceDark,
   },
-  avatarButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginRight: 12,
+  thumbLabel: {
+    color: Colors.textMuted, fontSize: 9, fontWeight: "600",
+    textAlign: "center",
   },
-  avatarButtonText: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    fontWeight: "600",
+  thumbLabelActive: { color: Colors.primary },
+  thumbGender: {
+    color: Colors.textMuted, fontSize: 10,
   },
-  helpButton: { padding: 4 },
-
+  thumbGenderActive: { color: Colors.primaryBase },
   inputSection: { marginBottom: 24 },
-  label: {
-    color: Colors.textSecondary,
-    fontSize: 12,
-    marginBottom: 8,
-    marginLeft: 4,
-  },
+  label: { color: Colors.textSecondary, fontSize: 12, marginBottom: 8, marginLeft: 4 },
   errorText: {
-    color: "#EF4444",
-    fontSize: 12,
-    marginTop: -8,
-    marginBottom: 8,
-    marginLeft: 4,
-    fontWeight: "500",
+    color: Colors.crimson, fontSize: 12,
+    marginTop: -8, marginBottom: 8, marginLeft: 4, fontWeight: "500",
   },
   summaryCard: {
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 12,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 16,
+    backgroundColor: Colors.surfaceDark, borderRadius: 8,
+    padding: 16, borderWidth: 1, borderColor: Colors.border, marginBottom: 16,
   },
   summaryRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 8,
+    flexDirection: "row", justifyContent: "space-between",
+    alignItems: "center", paddingVertical: 8,
   },
   summaryLabel: { color: Colors.textSecondary, fontSize: 14 },
   summaryValue: { color: Colors.primary, fontSize: 14, fontWeight: "bold" },
+  lockedValue:  { flexDirection: "row", alignItems: "center", gap: 4 },
   infoBox: {
-    flexDirection: "row",
-    backgroundColor: "rgba(245, 166, 35, 0.1)",
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 32,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(245, 166, 35, 0.3)",
+    flexDirection: "row", backgroundColor: Colors.primaryMuted,
+    padding: 16, borderRadius: 8, marginBottom: 32,
+    alignItems: "center", borderWidth: 1, borderColor: Colors.border,
   },
-  infoText: { color: Colors.primary, fontSize: 12, flex: 1, lineHeight: 18 },
+  infoText: { color: Colors.textSecondary, fontSize: 12, flex: 1, lineHeight: 18 },
   footer: { marginTop: "auto" },
-  pagination: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginBottom: 16,
-  },
+  pagination: { flexDirection: "row", justifyContent: "center", marginBottom: 16 },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: Colors.border,
-    marginHorizontal: 4,
+    width: 8, height: 8, borderRadius: 4,
+    backgroundColor: Colors.border, marginHorizontal: 4,
   },
   dotActive: { backgroundColor: Colors.primary, width: 24 },
-
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0, 0, 0, 0.8)",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  modalContent: {
-    width: "100%",
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
-    padding: 24,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    alignItems: "center",
-  },
-  modalIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    marginBottom: 16,
-  },
-  modalIcon: {
-    fontSize: 28,
-  },
-  modalTitle: {
-    color: Colors.primary,
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 12,
-    textAlign: "center",
-  },
-  modalText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    lineHeight: 22,
-    textAlign: "center",
-    marginBottom: 24,
-  },
 });

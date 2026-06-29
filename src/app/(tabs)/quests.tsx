@@ -10,23 +10,24 @@ import {
   ActivityIndicator,
   Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { trpc } from "../../lib/trpc";
 
 const DIFICULDADE_COR: Record<string, string> = {
-  facil: "#4CAF50",
+  facil: Colors.statVitality,
   moderado: Colors.primary,
-  dificil: "#F44336",
+  dificil: Colors.crimson,
 };
 
-const CATEGORIA_ICON: Record<string, string> = {
-  cardio: "🏃",
-  forca: "💪",
-  mental: "🧘",
-  full_body: "⚡",
-  flexibilidade: "🤸",
+const CATEGORIA_CONFIG: Record<string, { ionicon: string; color: string }> = {
+  cardio:        { ionicon: "walk",    color: Colors.statAgility  },
+  forca:         { ionicon: "barbell", color: Colors.statStrength },
+  mental:        { ionicon: "leaf",    color: Colors.statFocus    },
+  full_body:     { ionicon: "flash",   color: Colors.primary      },
+  flexibilidade: { ionicon: "body",    color: Colors.statVitality },
 };
 
 export default function QuestsScreen() {
@@ -52,6 +53,13 @@ export default function QuestsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={[Colors.surface, Colors.background]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.backButton}
@@ -78,10 +86,12 @@ export default function QuestsScreen() {
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : !missoes || missoes.length === 0 ? (
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📜</Text>
-            <Text style={styles.emptyTitle}>Sem missões hoje</Text>
+            <View style={styles.emptyIconWrap}>
+              <Ionicons name="reader-outline" size={80} color={Colors.primaryBase} />
+            </View>
+            <Text style={styles.emptyTitle}>O Conselho silencia</Text>
             <Text style={styles.emptyDesc}>
-              Gere suas missões diárias para começar a aventura!
+              Nenhum decreto foi emitido. Invoque suas missões diárias para retomar a jornada.
             </Text>
             <TouchableOpacity
               style={styles.gerarButton}
@@ -90,10 +100,10 @@ export default function QuestsScreen() {
               activeOpacity={0.8}
             >
               {gerarMutation.isPending ? (
-                <ActivityIndicator size="small" color={Colors.background} />
+                <ActivityIndicator size="small" color={Colors.textOnPrimary} />
               ) : (
                 <>
-                  <Ionicons name="refresh" size={18} color={Colors.background} />
+                  <Ionicons name="create-outline" size={18} color={Colors.textOnPrimary} />
                   <Text style={styles.gerarButtonText}>Gerar Missões</Text>
                 </>
               )}
@@ -109,6 +119,7 @@ export default function QuestsScreen() {
               const dificuldade = missaoUsuario.mission.difficulty;
               const categoria = missaoUsuario.mission.category;
               const cor = DIFICULDADE_COR[dificuldade] ?? Colors.primary;
+              const catConfig = CATEGORIA_CONFIG[categoria];
 
               return (
                 <View
@@ -120,9 +131,15 @@ export default function QuestsScreen() {
                   <View style={styles.questBody}>
                     <View style={styles.questTop}>
                       <View style={styles.questIconWrap}>
-                        <Text style={styles.questEmoji}>
-                          {concluida ? "✅" : (CATEGORIA_ICON[categoria] ?? "⚔️")}
-                        </Text>
+                        {concluida ? (
+                          <Ionicons name="checkmark-circle" size={22} color={Colors.statVitality} />
+                        ) : (
+                          <Ionicons
+                            name={(catConfig?.ionicon ?? "shield") as any}
+                            size={22}
+                            color={catConfig?.color ?? Colors.primary}
+                          />
+                        )}
                       </View>
                       <View style={styles.questInfo}>
                         <Text style={[styles.questTitle, concluida && styles.textDone]} numberOfLines={1}>
@@ -158,7 +175,7 @@ export default function QuestsScreen() {
                             activeOpacity={0.8}
                           >
                             {processando ? (
-                              <ActivityIndicator size="small" color={Colors.background} />
+                              <ActivityIndicator size="small" color={Colors.textOnPrimary} />
                             ) : (
                               <Text style={styles.concluirText}>Concluir</Text>
                             )}
@@ -219,9 +236,9 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: "rgba(245, 166, 35, 0.12)",
+    backgroundColor: Colors.primaryMuted,
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.primaryBase,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -238,10 +255,17 @@ const styles = StyleSheet.create({
   emptyState: {
     alignItems: "center",
     paddingVertical: 60,
-    gap: 12,
+    gap: 14,
   },
-  emptyIcon: {
-    fontSize: 56,
+  emptyIconWrap: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.primaryMuted,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
     marginBottom: 8,
   },
   emptyTitle: {
@@ -253,7 +277,7 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 14,
     textAlign: "center",
-    lineHeight: 20,
+    lineHeight: 21,
     paddingHorizontal: 24,
   },
   gerarButton: {
@@ -263,13 +287,15 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 14,
     paddingHorizontal: 28,
-    borderRadius: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
     marginTop: 8,
     minWidth: 160,
     justifyContent: "center",
   },
   gerarButtonText: {
-    color: Colors.background,
+    color: Colors.textOnPrimary,
     fontSize: 15,
     fontWeight: "bold",
   },
@@ -279,7 +305,7 @@ const styles = StyleSheet.create({
   questCard: {
     flexDirection: "row",
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     overflow: "hidden",
@@ -306,14 +332,13 @@ const styles = StyleSheet.create({
   questIconWrap: {
     width: 40,
     height: 40,
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: Colors.surface,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
-  questEmoji: { fontSize: 20 },
   questInfo: { flex: 1 },
   questTitle: {
     color: Colors.textPrimary,
@@ -369,14 +394,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.primary,
     paddingVertical: 7,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
     minWidth: 76,
     alignItems: "center",
     justifyContent: "center",
     minHeight: 32,
   },
   concluirText: {
-    color: Colors.background,
+    color: Colors.textOnPrimary,
     fontSize: 12,
     fontWeight: "bold",
   },

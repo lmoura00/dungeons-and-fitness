@@ -16,13 +16,13 @@ import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
-import { salvarSessao, marcarNovaContaPendente } from "../../lib/auth";
+import { marcarNovaContaPendente } from "../../lib/auth";
 
 const GENERO_MAP = { M: "masculino", F: "feminino", O: "nao_binario" } as const;
 const GENEROS = [
-  { key: "M", label: "Masculino", icon: "♂" },
-  { key: "F", label: "Feminino",  icon: "♀" },
-  { key: "O", label: "Outro",     icon: "⚧" },
+  { key: "M", label: "Masculino", ionicon: "male"        },
+  { key: "F", label: "Feminino",  ionicon: "female"      },
+  { key: "O", label: "Outro",     ionicon: "male-female" },
 ] as const;
 
 type FeedbackType = { type: "success" | "error"; message: string } | null;
@@ -46,29 +46,18 @@ export default function RegisterScreen() {
     timerRef.current = setTimeout(() => setFeedback(null), 5000);
   };
 
-  const loginMutation = trpc.auth.login.useMutation({
-    async onSuccess({ token, usuarioId }) {
-      setFeedback({ type: "success", message: "Conta criada! Preparando sua aventura..." });
-      await new Promise<void>((resolve) => setTimeout(resolve, 1200));
-      marcarNovaContaPendente();
-      await salvarSessao(token, usuarioId);
-    },
-    onError() {
-      showError("Conta criada! Faça login para continuar.");
-      setTimeout(() => router.replace("/(auth)"), 2500);
-    },
-  });
-
   const registerMutation = trpc.auth.registrar.useMutation({
     onSuccess() {
-      loginMutation.mutate({ email: email.trim(), senha: password });
+      marcarNovaContaPendente();
+      setFeedback({ type: "success", message: "Conta criada! Faça login para continuar." });
+      setTimeout(() => router.replace("/(auth)"), 1500);
     },
     onError(error) {
       showError(error.message);
     },
   });
 
-  const enviando = registerMutation.isPending || loginMutation.isPending;
+  const enviando = registerMutation.isPending;
 
   const handleRegister = () => {
     if (!name.trim() || !username.trim() || !email.trim() || !password) {
@@ -97,7 +86,6 @@ export default function RegisterScreen() {
       style={styles.container}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Toast de feedback */}
       {feedback && (
         <View style={[styles.toast, feedback.type === "success" ? styles.toastSuccess : styles.toastError]}>
           <Ionicons
@@ -120,7 +108,6 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Header */}
           <View style={styles.topBar}>
             <TouchableOpacity
               style={styles.backButton}
@@ -136,7 +123,6 @@ export default function RegisterScreen() {
             <Text style={styles.heroSub}>Crie sua conta e comece a aventura</Text>
           </View>
 
-          {/* Seção: Conta */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>CONTA</Text>
 
@@ -200,7 +186,6 @@ export default function RegisterScreen() {
             />
           </View>
 
-          {/* Seção: Perfil */}
           <View style={styles.section}>
             <Text style={styles.sectionLabel}>PERFIL</Text>
             <Text style={styles.fieldLabel}>Gênero</Text>
@@ -212,7 +197,11 @@ export default function RegisterScreen() {
                   onPress={() => setGender(g.key)}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.generoIcon}>{g.icon}</Text>
+                  <Ionicons
+                    name={g.ionicon as any}
+                    size={18}
+                    color={gender === g.key ? Colors.primary : Colors.textMuted}
+                  />
                   <Text style={[styles.generoLabel, gender === g.key && styles.generoLabelAtivo]}>
                     {g.label}
                   </Text>
@@ -221,24 +210,10 @@ export default function RegisterScreen() {
             </View>
           </View>
 
-          {/* Ações */}
           <View style={styles.actions}>
             <PrimaryButton
               title={enviando ? "CRIANDO CONTA..." : "CRIAR CONTA"}
               onPress={handleRegister}
-              disabled={enviando}
-            />
-
-            <View style={styles.divider}>
-              <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>ou</Text>
-              <View style={styles.dividerLine} />
-            </View>
-
-            <PrimaryButton
-              title="JÁ TENHO CONTA"
-              variant="outline"
-              onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)")}
               disabled={enviando}
             />
           </View>
@@ -265,7 +240,7 @@ const styles = StyleSheet.create({
     left: 16,
     right: 16,
     zIndex: 999,
-    borderRadius: 14,
+    borderRadius: 10,
     paddingVertical: 12,
     paddingHorizontal: 14,
     flexDirection: "row",
@@ -315,7 +290,7 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: "bold",
     marginBottom: 6,
-    textShadowColor: "rgba(245, 166, 35, 0.3)",
+    textShadowColor: 'rgba(232, 148, 34, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
@@ -325,7 +300,7 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
+    borderRadius: 10,
     padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -366,7 +341,7 @@ const styles = StyleSheet.create({
   generoButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
@@ -374,12 +349,8 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   generoButtonAtivo: {
-    backgroundColor: "rgba(245, 166, 35, 0.12)",
-    borderColor: Colors.primary,
-  },
-  generoIcon: {
-    fontSize: 18,
-    color: Colors.textPrimary,
+    backgroundColor: Colors.primaryMuted,
+    borderColor: Colors.primaryDark,
   },
   generoLabel: {
     color: Colors.textMuted,

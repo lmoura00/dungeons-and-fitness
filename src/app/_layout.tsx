@@ -7,27 +7,31 @@ import { useSession } from "../hooks/useSession";
 import { trpc } from "../lib/trpc";
 
 function RootNavigator() {
-  const { isAuthenticated } = useSession();
+  const { isAuthenticated, isLoadingSession } = useSession();
   const segments = useSegments();
   const router = useRouter();
 
   const { data: personagem, isLoading: loadingPersonagem, isError: semPersonagem } = trpc.personagens.meuPersonagem.useQuery(
     undefined,
-    { enabled: isAuthenticated, retry: false }
+    { enabled: !!isAuthenticated, retry: false }
   );
 
   useEffect(() => {
+    if (isLoadingSession) return;
+
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = segments[0] === "(onboarding)";
 
     if (!isAuthenticated && !inAuthGroup && !inOnboarding) {
-      router.replace("/(auth)");
-    } else if (isAuthenticated && inAuthGroup) {
-      router.replace("/(tabs)/dashboard");
-    } else if (isAuthenticated && !inAuthGroup && !inOnboarding && !loadingPersonagem && (semPersonagem || !personagem)) {
-      router.replace("/(onboarding)/choose-race");
+      router.replace("/(auth)/welcome");
+    } else if (isAuthenticated && inAuthGroup && !loadingPersonagem) {
+      if (semPersonagem || !personagem) {
+        router.replace("/(onboarding)/choose-race");
+      } else {
+        router.replace("/(tabs)/dashboard");
+      }
     }
-  }, [isAuthenticated, segments, personagem, loadingPersonagem, semPersonagem]);
+  }, [isAuthenticated, isLoadingSession, segments, personagem, loadingPersonagem, semPersonagem]);
 
   return (
     <Stack

@@ -3,7 +3,7 @@ import { View, StyleSheet } from 'react-native';
 import { Colors } from '../constants/Colors';
 
 interface ProgressBarProps {
-  progress: number; 
+  progress: number;
 }
 
 export function ProgressBar({ progress }: ProgressBarProps) {
@@ -18,9 +18,9 @@ export function ProgressBar({ progress }: ProgressBarProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 12,
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 6,
+    height: 10,
+    backgroundColor: Colors.background,
+    borderRadius: 5,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border,
@@ -28,6 +28,6 @@ const styles = StyleSheet.create({
   fill: {
     height: '100%',
     backgroundColor: Colors.primary,
-    borderRadius: 6,
+    borderRadius: 5,
   },
 });

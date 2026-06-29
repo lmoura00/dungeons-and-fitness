@@ -1,15 +1,56 @@
 import React from "react";
-import { Stack } from "expo-router";
+import { Tabs } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors } from "../../constants/Colors";
 
+type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
+
+const TAB_ITEMS: { name: string; label: string; icon: IoniconName; iconActive: IoniconName }[] = [
+  { name: "dashboard",    label: "Home",      icon: "home-outline",       iconActive: "home" },
+  { name: "quests",       label: "Missões",   icon: "shield-outline",     iconActive: "shield" },
+  { name: "log-activity", label: "Registrar", icon: "add-circle-outline", iconActive: "add-circle" },
+  { name: "profile",      label: "Perfil",    icon: "person-outline",     iconActive: "person" },
+];
+
 export default function TabsLayout() {
+  const insets = useSafeAreaInsets();
+
   return (
-    <Stack
+    <Tabs
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: Colors.background },
-        animation: "fade",
+        tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopWidth: 1,
+          borderTopColor: Colors.border,
+          paddingBottom: Math.max(insets.bottom, 8),
+          paddingTop: 8,
+        },
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: Colors.textSecondary,
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: "600",
+        },
       }}
-    />
+    >
+      {TAB_ITEMS.map((item) => (
+        <Tabs.Screen
+          key={item.name}
+          name={item.name}
+          options={{
+            title: item.label,
+            tabBarIcon: ({ focused, color, size }) => (
+              <Ionicons
+                name={focused ? item.iconActive : item.icon}
+                size={size}
+                color={color}
+              />
+            ),
+          }}
+        />
+      ))}
+    </Tabs>
   );
 }

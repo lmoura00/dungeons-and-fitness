@@ -1,21 +1,30 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { TextInput, StyleSheet, TextInputProps, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 
 interface CustomInputProps extends TextInputProps {
-  icon?: keyof typeof Ionicons.glyphMap; 
+  icon?: keyof typeof Ionicons.glyphMap;
 }
 
-export function CustomInput({ style, icon, ...rest }: CustomInputProps) {
+export function CustomInput({ style, icon, onFocus, onBlur, ...rest }: CustomInputProps) {
+  const [focused, setFocused] = useState(false);
+
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, focused && styles.containerFocused]}>
       {icon && (
-        <Ionicons name={icon} size={20} color={Colors.textSecondary} style={styles.icon} />
+        <Ionicons
+          name={icon}
+          size={20}
+          color={focused ? Colors.primaryBase : Colors.textMuted}
+          style={styles.icon}
+        />
       )}
-      <TextInput 
+      <TextInput
         style={[styles.input, icon && styles.inputWithIcon, style]}
         placeholderTextColor={Colors.textMuted}
+        onFocus={(e) => { setFocused(true); onFocus?.(e); }}
+        onBlur={(e) => { setFocused(false); onBlur?.(e); }}
         {...rest}
       />
     </View>
@@ -28,10 +37,14 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surface, 
-    borderRadius: 12, 
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 6,
     borderWidth: 1,
     borderColor: Colors.border,
+  },
+  containerFocused: {
+    borderWidth: 2,
+    borderColor: Colors.primaryBase,
   },
   icon: {
     paddingLeft: 16,
@@ -44,6 +57,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   inputWithIcon: {
-    paddingLeft: 12, 
-  }
+    paddingLeft: 12,
+  },
 });

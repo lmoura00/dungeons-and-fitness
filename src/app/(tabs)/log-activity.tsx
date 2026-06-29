@@ -13,6 +13,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -24,20 +25,20 @@ import { trpc } from "../../lib/trpc";
 type TipoAtividade = "corrida" | "forca" | "ciclismo" | "natacao" | "yoga" | "esporte" | "outro";
 type Intensidade = "leve" | "moderado" | "intenso";
 
-const TIPOS: { value: TipoAtividade; label: string; icon: string }[] = [
-  { value: "corrida", label: "Corrida", icon: "🏃" },
-  { value: "forca", label: "Força", icon: "💪" },
-  { value: "ciclismo", label: "Ciclismo", icon: "🚴" },
-  { value: "natacao", label: "Natação", icon: "🏊" },
-  { value: "yoga", label: "Yoga", icon: "🧘" },
-  { value: "esporte", label: "Esporte", icon: "⚽" },
-  { value: "outro", label: "Outro", icon: "🏋️" },
+const TIPOS: { value: TipoAtividade; label: string; ionicon: string }[] = [
+  { value: "corrida",   label: "Corrida",   ionicon: "walk"    },
+  { value: "forca",     label: "Força",     ionicon: "barbell" },
+  { value: "ciclismo",  label: "Ciclismo",  ionicon: "bicycle" },
+  { value: "natacao",   label: "Natação",   ionicon: "water"   },
+  { value: "yoga",      label: "Yoga",      ionicon: "leaf"    },
+  { value: "esporte",   label: "Esporte",   ionicon: "football"},
+  { value: "outro",     label: "Outro",     ionicon: "fitness" },
 ];
 
 const INTENSIDADES: { value: Intensidade; label: string; cor: string }[] = [
-  { value: "leve", label: "Leve", cor: "#4CAF50" },
-  { value: "moderado", label: "Moderado", cor: Colors.primary },
-  { value: "intenso", label: "Intenso", cor: "#F44336" },
+  { value: "leve",     label: "Leve",      cor: Colors.statVitality },
+  { value: "moderado", label: "Moderado",  cor: Colors.primary      },
+  { value: "intenso",  label: "Intenso",   cor: Colors.crimson      },
 ];
 
 const XP_POR_NIVEL = 3000;
@@ -94,6 +95,13 @@ export default function LogActivityScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient
+        colors={[Colors.surface, Colors.background]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
+
       <KeyboardAvoidingView
         style={styles.keyboardView}
         behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -121,26 +129,25 @@ export default function LogActivityScreen() {
             <View style={styles.formCard}>
               <Text style={styles.label}>Tipo de Atividade</Text>
               <View style={styles.tiposGrid}>
-                {TIPOS.map((tipo) => (
-                  <TouchableOpacity
-                    key={tipo.value}
-                    style={[
-                      styles.tipoButton,
-                      tipoAtividade === tipo.value && styles.tipoButtonAtivo,
-                    ]}
-                    onPress={() => setTipoAtividade(tipo.value)}
-                  >
-                    <Text style={styles.tipoIcon}>{tipo.icon}</Text>
-                    <Text
-                      style={[
-                        styles.tipoLabel,
-                        tipoAtividade === tipo.value && styles.tipoLabelAtivo,
-                      ]}
+                {TIPOS.map((tipo) => {
+                  const ativo = tipoAtividade === tipo.value;
+                  return (
+                    <TouchableOpacity
+                      key={tipo.value}
+                      style={[styles.tipoButton, ativo && styles.tipoButtonAtivo]}
+                      onPress={() => setTipoAtividade(tipo.value)}
                     >
-                      {tipo.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Ionicons
+                        name={tipo.ionicon as any}
+                        size={16}
+                        color={ativo ? Colors.primary : Colors.textMuted}
+                      />
+                      <Text style={[styles.tipoLabel, ativo && styles.tipoLabelAtivo]}>
+                        {tipo.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               <Text style={styles.label}>Duração (minutos)</Text>
@@ -181,7 +188,7 @@ export default function LogActivityScreen() {
                 <Ionicons
                   name="bulb"
                   size={20}
-                  color={Colors.primary}
+                  color={Colors.primaryBase}
                   style={styles.infoIcon}
                 />
                 <Text style={styles.infoText}>
@@ -204,7 +211,7 @@ export default function LogActivityScreen() {
         <SafeAreaView style={styles.modalContainer}>
           <View style={styles.rewardContent}>
             <View style={styles.glowCircle}>
-              <Text style={styles.trophyIcon}>🏆</Text>
+              <Ionicons name="trophy" size={50} color={Colors.gold} />
             </View>
 
             <Text style={styles.rewardTitle}>Missão Concluída!</Text>
@@ -282,7 +289,7 @@ const styles = StyleSheet.create({
   },
   formCard: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
+    borderRadius: 10,
     padding: 24,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -311,20 +318,17 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     backgroundColor: Colors.surface,
   },
   tipoButtonAtivo: {
-    borderColor: Colors.primary,
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
-  },
-  tipoIcon: {
-    fontSize: 16,
+    borderColor: Colors.primaryBase,
+    backgroundColor: Colors.primaryMuted,
   },
   tipoLabel: {
-    color: Colors.textSecondary,
+    color: Colors.textMuted,
     fontSize: 13,
     fontWeight: "600",
   },
@@ -339,7 +343,7 @@ const styles = StyleSheet.create({
   intensidadeButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
     alignItems: "center",
@@ -351,20 +355,20 @@ const styles = StyleSheet.create({
   },
   infoBox: {
     flexDirection: "row",
-    backgroundColor: "rgba(245, 166, 35, 0.1)",
+    backgroundColor: Colors.primaryMuted,
     padding: 16,
-    borderRadius: 12,
+    borderRadius: 8,
     marginBottom: 32,
     alignItems: "flex-start",
     borderWidth: 1,
-    borderColor: "rgba(245, 166, 35, 0.3)",
+    borderColor: Colors.border,
   },
   infoIcon: {
     marginRight: 8,
     marginTop: 2,
   },
   infoText: {
-    color: Colors.primary,
+    color: Colors.textSecondary,
     fontSize: 13,
     flex: 1,
     lineHeight: 20,
@@ -383,20 +387,17 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
+    backgroundColor: Colors.primaryMuted,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 2,
-    borderColor: Colors.primary,
+    borderColor: Colors.primaryBase,
     marginBottom: 24,
-    shadowColor: Colors.primary,
+    shadowColor: Colors.primaryBase,
     shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.8,
+    shadowOpacity: 0.5,
     shadowRadius: 20,
     elevation: 10,
-  },
-  trophyIcon: {
-    fontSize: 50,
   },
   rewardTitle: {
     color: Colors.primary,
@@ -413,12 +414,12 @@ const styles = StyleSheet.create({
   },
   xpCard: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
+    borderRadius: 10,
     paddingVertical: 24,
     paddingHorizontal: 40,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.primaryDark,
     marginBottom: 40,
     width: "100%",
   },
@@ -438,7 +439,7 @@ const styles = StyleSheet.create({
     width: "100%",
     backgroundColor: Colors.surfaceDark,
     padding: 20,
-    borderRadius: 16,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: 40,
@@ -450,12 +451,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   rewardLevelText: {
-    color: "#FFF",
+    color: Colors.textPrimary,
     fontSize: 18,
     fontWeight: "bold",
   },
   rewardProgressText: {
-    color: Colors.primary,
+    color: Colors.primaryBase,
     fontSize: 14,
     fontWeight: "bold",
   },

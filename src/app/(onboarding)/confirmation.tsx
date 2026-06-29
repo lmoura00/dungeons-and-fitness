@@ -16,25 +16,21 @@ import { Colors } from "../../constants/Colors";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { limparNovaContaPendente } from "../../lib/auth";
 import { trpc } from "../../lib/trpc";
-
-const RACE_IMAGES: Record<string, any> = {
-  Humano: require("../../../assets/race-human.png"),
-  Anão: require("../../../assets/race-dwarf.png"),
-  Elfo: require("../../../assets/race-elf.png"),
-};
+import { getAvatar, getAvatarByKey } from "../../utils/getAvatar";
 
 export default function ConfirmationScreen() {
   const params = useLocalSearchParams<{
     raceId: string;
     raceName: string;
     characterName: string;
-    avatarSeed?: string;
+    avatarKey?: string;
   }>();
-  const raceId = params.raceId || "";
-  const raceName = params.raceName || "Anão";
+  const raceId        = params.raceId        || "";
+  const raceName      = params.raceName      || "Anão";
   const characterName = params.characterName || "Aventureiro";
-  const avatarSeed = params.avatarSeed;
+  const avatarKey     = params.avatarKey;
 
+  const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: classes } = trpc.classes.listar.useQuery();
 
   const criarMutation = trpc.personagens.criar.useMutation({
@@ -69,25 +65,20 @@ export default function ConfirmationScreen() {
 
         <Text style={styles.stepText}>PASSO 3 DE 3</Text>
         <Text style={styles.title}>Seu Aventureiro</Text>
-        <Text style={styles.subtitle}>
-          Confirme as informações do seu personagem
-        </Text>
+        <Text style={styles.subtitle}>Confirme as informações do seu personagem</Text>
 
         <View style={styles.card}>
           <View style={styles.avatarContainer}>
             <View style={styles.avatarGlow}>
-              <View style={styles.avatarCircle}>
-                <Image
-                  source={
-                    avatarSeed
-                      ? {
-                          uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${avatarSeed}&backgroundColor=F5A623`,
-                        }
-                      : RACE_IMAGES[raceName]
-                  }
-                  style={styles.avatarImage}
-                />
-              </View>
+              <Image
+                source={
+                  avatarKey
+                    ? getAvatarByKey(avatarKey)
+                    : getAvatar("Aprendiz", raceName, usuario?.gender)
+                }
+                style={styles.avatarImage}
+                resizeMode="contain"
+              />
             </View>
             <Text style={styles.characterName}>{characterName}</Text>
             <Text style={styles.characterSubtitle}>{raceName} • Aprendiz</Text>
@@ -102,9 +93,10 @@ export default function ConfirmationScreen() {
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Classe</Text>
-              <Text style={[styles.statValue, { color: Colors.textSecondary }]}>
-                🔒 Aprendiz
-              </Text>
+              <View style={styles.lockedValue}>
+                <Ionicons name="lock-closed" size={13} color={Colors.textMuted} />
+                <Text style={[styles.statValue, { color: Colors.textSecondary }]}>Aprendiz</Text>
+              </View>
             </View>
             <View style={styles.statRow}>
               <Text style={styles.statLabel}>Nível Inicial</Text>
@@ -172,7 +164,7 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     textAlign: "center",
     marginBottom: 4,
-    textShadowColor: "rgba(245, 166, 35, 0.3)",
+    textShadowColor: 'rgba(232, 148, 34, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
@@ -184,10 +176,10 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
+    borderRadius: 10,
     padding: 24,
     borderWidth: 1,
-    borderColor: Colors.primary,
+    borderColor: Colors.border,
     alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -200,24 +192,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   avatarGlow: {
-    padding: 4,
-    borderRadius: 60,
-    backgroundColor: "rgba(245, 166, 35, 0.2)",
-  },
-  avatarCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-    backgroundColor: Colors.surface,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    overflow: "hidden",
+    padding: 3,
+    borderRadius: 9999,
+    borderWidth: 1.5,
+    borderColor: Colors.primaryDark,
+    backgroundColor: Colors.primaryMuted,
+    shadowColor: Colors.primary,
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 8,
   },
   avatarImage: {
     width: 90,
     height: 90,
+    borderRadius: 9999,
+    backgroundColor: Colors.surfaceDark,
   },
   characterName: {
     color: Colors.textPrimary,
@@ -227,7 +217,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   characterSubtitle: {
-    color: Colors.primary,
+    color: Colors.primaryBase,
     fontSize: 14,
     fontWeight: "600",
   },
@@ -243,6 +233,7 @@ const styles = StyleSheet.create({
   statRow: {
     flexDirection: "row",
     justifyContent: "space-between",
+    alignItems: "center",
     paddingVertical: 10,
   },
   statLabel: {
@@ -253,6 +244,11 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 14,
     fontWeight: "bold",
+  },
+  lockedValue: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
   },
   footer: {
     marginTop: "auto",

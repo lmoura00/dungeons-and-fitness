@@ -8,13 +8,14 @@ import {
   Image,
   TouchableOpacity,
   Platform,
-  ActivityIndicator,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
 import { trpc } from "../../lib/trpc";
+import { getAvatar } from "../../utils/getAvatar";
 
 const XP_POR_NIVEL = 3000;
 
@@ -25,22 +26,23 @@ function calcularPatamar(nivel: number): string {
   return "Lendário";
 }
 
-const ATRIBUTOS = [
-  { key: "strength", label: "FOR", icon: "💪" },
-  { key: "agility",  label: "AGI", icon: "⚡" },
-  { key: "focus",    label: "FOC", icon: "🎯" },
-  { key: "energy",   label: "VIT", icon: "❤️" },
-] as const;
+function getSaudacao(): string {
+  const h = new Date().getHours();
+  if (h < 12) return "Bom dia";
+  if (h < 18) return "Boa tarde";
+  return "Boa noite";
+}
 
-const NAV_ITEMS = [
-  { id: "dashboard",    label: "Dashboard", icon: "home",        route: "/(tabs)/dashboard" },
-  { id: "quests",       label: "Missões",   icon: "shield",      route: "/(tabs)/quests" },
-  { id: "log-activity", label: "Registrar", icon: "add-circle",  route: "/(tabs)/log-activity" },
-  { id: "profile",      label: "Perfil",    icon: "person",      route: "/(tabs)/profile" },
+const ATRIBUTOS = [
+  { key: "strength", label: "FOR", ionicon: "barbell",  color: Colors.statStrength },
+  { key: "agility",  label: "AGI", ionicon: "flash",    color: Colors.statAgility  },
+  { key: "focus",    label: "FOC", ionicon: "eye",      color: Colors.statFocus    },
+  { key: "energy",   label: "VIT", ionicon: "heart",    color: Colors.statVitality },
 ] as const;
 
 export default function DashboardScreen() {
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
+  const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: streak } = trpc.streak.atual.useQuery();
 
   const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
@@ -50,150 +52,150 @@ export default function DashboardScreen() {
   const diasSequencia = streak?.diasSequencia ?? 0;
   const streakAtivo = diasSequencia > 0;
   const attrs = personagem?.attributes;
+  const avatarSource = getAvatar(personagem?.class?.name, personagem?.race?.name, usuario?.gender);
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.topHeader}>
-        <View style={styles.headerLeft}>
-          <Image
-            source={require("../../../assets/logo_df_circulo 1.png")}
-            style={styles.smallLogo}
-          />
-          <View>
-            <Text style={styles.headerGreeting}>Bem-vindo de volta,</Text>
-            <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
-          </View>
-        </View>
-        <TouchableOpacity style={[styles.streakBadge, streakAtivo && styles.streakBadgeAtivo]}>
-          <Text style={styles.streakIcon}>🔥</Text>
-          <Text style={[styles.streakText, streakAtivo && styles.streakTextAtivo]}>
-            {diasSequencia}d
-          </Text>
-        </TouchableOpacity>
-      </View>
+      <LinearGradient
+        colors={[Colors.surface, Colors.background]}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
+      />
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.nav}
-        style={styles.navContainer}
-      >
-        {NAV_ITEMS.map((item) => {
-          const active = item.id === "dashboard";
-          return (
-            <TouchableOpacity
-              key={item.id}
-              style={[styles.navButton, active && styles.navButtonActive]}
-              onPress={() => { if (!active) router.push(item.route as any); }}
-              activeOpacity={0.8}
-            >
-              <Ionicons
-                name={item.icon as any}
-                size={14}
-                color={active ? Colors.background : Colors.primary}
-              />
-              <Text style={[styles.navLabel, active && styles.navLabelActive]}>
-                {item.label}
-              </Text>
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header */}
+        <View style={styles.header}>
+          <View style={styles.headerRow}>
+            <Image source={avatarSource} style={styles.headerAvatar} />
+            <Text style={styles.headerGreeting}>{getSaudacao()}</Text>
+            <TouchableOpacity style={styles.bellButton}>
+              <Ionicons name="notifications-outline" size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
-          );
-        })}
-      </ScrollView>
+          </View>
 
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Character Card */}
-        <View style={styles.characterCard}>
-          <View style={styles.cardLeft}>
-            <View style={styles.avatarGlow}>
-              <View style={styles.avatarCircle}>
-                {isLoading ? (
-                  <ActivityIndicator color={Colors.primary} />
-                ) : (
-                  <Image
-                    source={{
-                      uri: `https://api.dicebear.com/8.x/adventurer/png?seed=${personagem?.name ?? "Hero"}&backgroundColor=F5A623`,
-                    }}
-                    style={styles.avatarImage}
-                  />
-                )}
+          <Text style={styles.heroTitle}>
+            Hey, {personagem?.name ?? "Aventureiro"}
+          </Text>
+          <Text style={styles.heroSub}>
+            {isLoading ? "Carregando..." : `${personagem?.race?.name ?? "—"} · ${personagem?.class?.name ?? "—"} · Nível ${nivel}`}
+          </Text>
+        </View>
+
+        {/* Featured Card */}
+        <View style={styles.featuredCard}>
+          <LinearGradient
+            colors={["#3D2208", "#150A02"]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.featuredGradient}
+          >
+            <View style={styles.featuredLeft}>
+              <View style={styles.featuredBadge}>
+                <Ionicons name="flash" size={11} color={Colors.primary} />
+                <Text style={styles.featuredBadgeText}>{patamar}</Text>
+              </View>
+              <Text style={styles.featuredTitle}>{personagem?.name ?? "Aventureiro"}</Text>
+              <Text style={styles.featuredSub}>
+                {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+              </Text>
+              <View style={styles.featuredBarWrap}>
+                <ProgressBar progress={progresso} />
               </View>
             </View>
-          </View>
+            <Image
+              source={avatarSource}
+              style={styles.featuredAvatar}
+              resizeMode="contain"
+            />
+          </LinearGradient>
+        </View>
 
-          <View style={styles.cardRight}>
-            <View style={styles.patamarBadge}>
-              <Text style={styles.patamarBadgeText}>{patamar}</Text>
-            </View>
-            <Text style={styles.characterName} numberOfLines={1}>
-              {personagem?.name ?? "—"}
+        {/* Streak row */}
+        <View style={styles.streakRow}>
+          <View style={[styles.streakCard, streakAtivo && styles.streakCardAtivo]}>
+            <Ionicons name="flame" size={20} color={streakAtivo ? Colors.primary : Colors.textMuted} />
+            <Text style={[styles.streakValue, streakAtivo && styles.streakValueAtivo]}>
+              {diasSequencia}
             </Text>
-            <Text style={styles.characterSub}>
-              {isLoading ? "..." : `${personagem?.race?.name ?? "—"} · ${personagem?.class?.name ?? "—"}`}
+            <Text style={styles.streakLabel}>Streak</Text>
+          </View>
+          <View style={styles.streakCard}>
+            <Ionicons name="star" size={20} color={Colors.gold} />
+            <Text style={styles.streakValue}>
+              {personagem?.currentXp?.toLocaleString("pt-BR") ?? "0"}
             </Text>
-            <Text style={styles.levelLabel}>Nível {nivel}</Text>
+            <Text style={styles.streakLabel}>XP Total</Text>
+          </View>
+          <View style={styles.streakCard}>
+            <Ionicons name="trending-up" size={20} color={Colors.statAgility} />
+            <Text style={styles.streakValue}>{nivel}</Text>
+            <Text style={styles.streakLabel}>Nível</Text>
           </View>
         </View>
 
-        {/* XP Bar */}
-        <View style={styles.xpSection}>
-          <View style={styles.xpHeader}>
-            <Text style={styles.xpTitle}>Experiência</Text>
-            <Text style={styles.xpValue}>
-              {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
-            </Text>
-          </View>
-          <ProgressBar progress={progresso} />
-          {nivel < 5 && (
-            <Text style={styles.xpHint}>Nível 5 para desbloquear sua Classe</Text>
-          )}
+        {/* Daily Summary */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>RESUMO DE HOJE</Text>
+          <TouchableOpacity onPress={() => router.push("/(tabs)/quests")}>
+            <Text style={styles.sectionLink}>Ver tudo</Text>
+          </TouchableOpacity>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.statCard}>
-            <Ionicons name="star" size={18} color={Colors.primary} style={styles.statIcon} />
-            <Text style={styles.statValue}>{personagem?.currentXp?.toLocaleString("pt-BR") ?? "0"}</Text>
-            <Text style={styles.statLabel}>XP Total</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statEmoji}>🔥</Text>
-            <Text style={styles.statValue}>{diasSequencia}</Text>
-            <Text style={styles.statLabel}>Streak</Text>
-          </View>
-        </View>
-
-        {/* Attributes */}
-        {attrs && (
-          <View style={styles.attrsCard}>
-            <Text style={styles.sectionTitle}>ATRIBUTOS</Text>
-            <View style={styles.attrsGrid}>
-              {ATRIBUTOS.map((a) => (
-                <View key={a.key} style={styles.attrItem}>
-                  <Text style={styles.attrIcon}>{a.icon}</Text>
-                  <Text style={styles.attrValue}>{attrs[a.key]}</Text>
-                  <Text style={styles.attrLabel}>{a.label}</Text>
-                </View>
-              ))}
-            </View>
-          </View>
-        )}
-
-        {/* Quick Actions */}
-        <Text style={styles.sectionTitle}>AÇÕES RÁPIDAS</Text>
         <TouchableOpacity
-          style={styles.actionCard}
+          style={styles.summaryCard}
           onPress={() => router.push("/(tabs)/quests")}
           activeOpacity={0.8}
         >
-          <View style={styles.actionIcon}>
-            <Text style={styles.actionEmoji}>⚔️</Text>
+          <View style={[styles.summaryIconWrap, { backgroundColor: Colors.primaryMuted }]}>
+            <Ionicons name="shield" size={20} color={Colors.primary} />
           </View>
-          <View style={styles.actionText}>
-            <Text style={styles.actionTitle}>Missões do Dia</Text>
-            <Text style={styles.actionSub}>Complete para ganhar XP e manter o streak</Text>
+          <View style={styles.summaryText}>
+            <Text style={styles.summaryTitle}>Missões do Dia</Text>
+            <Text style={styles.summarySub}>Complete para ganhar XP e manter o streak</Text>
           </View>
-          <Ionicons name="chevron-forward" size={20} color={Colors.primary} />
+          <View style={[styles.summaryBadge, { backgroundColor: Colors.primaryMuted }]}>
+            <Text style={[styles.summaryBadgeText, { color: Colors.primary }]}>Missões</Text>
+          </View>
         </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.summaryCard}
+          onPress={() => router.push("/(tabs)/log-activity")}
+          activeOpacity={0.8}
+        >
+          <View style={[styles.summaryIconWrap, { backgroundColor: "#1A3A2A" }]}>
+            <Ionicons name="add-circle" size={20} color={Colors.statAgility} />
+          </View>
+          <View style={styles.summaryText}>
+            <Text style={styles.summaryTitle}>Registrar Atividade</Text>
+            <Text style={styles.summarySub}>Ganhe XP e atributos com cada treino</Text>
+          </View>
+          <View style={[styles.summaryBadge, { backgroundColor: "#1A3A2A" }]}>
+            <Text style={[styles.summaryBadgeText, { color: Colors.statAgility }]}>XP</Text>
+          </View>
+        </TouchableOpacity>
+
+        {/* Attributes */}
+        {attrs && (
+          <>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>ATRIBUTOS</Text>
+            </View>
+            <View style={styles.attrsCard}>
+              {ATRIBUTOS.map((a) => (
+                <View key={a.key} style={styles.attrRow}>
+                  <Ionicons name={a.ionicon as any} size={18} color={a.color} />
+                  <Text style={styles.attrLabel}>{a.label}</Text>
+                  <View style={styles.attrBarBg}>
+                    <View style={[styles.attrBarFill, { width: `${Math.min((attrs[a.key] / 100) * 100, 100)}%`, backgroundColor: a.color }]} />
+                  </View>
+                  <Text style={[styles.attrValue, { color: a.color }]}>{attrs[a.key]}</Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -204,258 +206,160 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
-  topHeader: {
+  scroll: {
+    paddingBottom: 32,
+  },
+
+  /* Header */
+  header: {
+    paddingHorizontal: 24,
+    paddingTop: Platform.OS === "ios" ? 12 : 48,
+    paddingBottom: 24,
+  },
+  headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === "ios" ? 10 : 50,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
+    gap: 10,
+    marginBottom: 20,
   },
-  headerLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+  headerAvatar: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: Colors.surfaceDark,
+    borderWidth: 1.5,
+    borderColor: Colors.primaryDark,
   },
-  smallLogo: {
+  headerGreeting: {
+    flex: 1,
+    color: Colors.textSecondary,
+    fontSize: 14,
+    fontWeight: "500",
+  },
+  bellButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-  },
-  headerGreeting: {
-    color: Colors.textMuted,
-    fontSize: 11,
-    fontWeight: "500",
-  },
-  headerName: {
-    color: Colors.textPrimary,
-    fontSize: 16,
-    fontWeight: "bold",
-  },
-  streakBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
     backgroundColor: Colors.surface,
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  streakBadgeAtivo: {
-    borderColor: "#FF6B35",
-    backgroundColor: "rgba(255, 107, 53, 0.12)",
-  },
-  streakIcon: {
-    fontSize: 14,
-  },
-  streakText: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "bold",
-  },
-  streakTextAtivo: {
-    color: "#FF6B35",
-  },
-  navContainer: {
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  nav: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    gap: 8,
-  },
-  navButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceDark,
-  },
-  navButtonActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  navLabel: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  navLabelActive: {
-    color: Colors.background,
-  },
-  content: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 24,
-    gap: 16,
-  },
-  characterCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
-    padding: 20,
-    borderWidth: 1,
-    borderColor: Colors.primary,
-    gap: 16,
-  },
-  cardLeft: {
-    alignItems: "center",
-  },
-  avatarGlow: {
-    padding: 3,
-    borderRadius: 44,
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
-  },
-  avatarCircle: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: Colors.surface,
     justifyContent: "center",
     alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary,
+  },
+  heroTitle: {
+    color: Colors.textPrimary,
+    fontSize: 30,
+    fontWeight: "bold",
+    letterSpacing: -0.5,
+    marginBottom: 6,
+  },
+  heroSub: {
+    color: Colors.textMuted,
+    fontSize: 14,
+  },
+
+  /* Featured card */
+  featuredCard: {
+    marginHorizontal: 24,
+    borderRadius: 16,
     overflow: "hidden",
-  },
-  avatarImage: { width: 80, height: 80 },
-  cardRight: {
-    flex: 1,
-    gap: 4,
-  },
-  patamarBadge: {
-    alignSelf: "flex-start",
-    backgroundColor: "rgba(245, 166, 35, 0.15)",
-    paddingVertical: 3,
-    paddingHorizontal: 10,
-    borderRadius: 8,
+    marginBottom: 16,
     borderWidth: 1,
-    borderColor: "rgba(245, 166, 35, 0.3)",
+    borderColor: Colors.primaryDark,
+  },
+  featuredGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 20,
+    minHeight: 140,
+  },
+  featuredLeft: {
+    flex: 1,
+    gap: 6,
+  },
+  featuredBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    alignSelf: "flex-start",
+    backgroundColor: Colors.primaryMuted,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
     marginBottom: 4,
   },
-  patamarBadgeText: {
+  featuredBadgeText: {
     color: Colors.primary,
     fontSize: 10,
     fontWeight: "bold",
     textTransform: "uppercase",
     letterSpacing: 1,
   },
-  characterName: {
+  featuredTitle: {
     color: Colors.textPrimary,
     fontSize: 20,
     fontWeight: "bold",
   },
-  characterSub: {
+  featuredSub: {
     color: Colors.textSecondary,
-    fontSize: 13,
+    fontSize: 12,
   },
-  levelLabel: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: "700",
+  featuredBarWrap: {
     marginTop: 4,
+    width: "85%",
   },
-  xpSection: {
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 10,
+  featuredAvatar: {
+    width: 90,
+    height: 110,
+    borderRadius: 8,
   },
-  xpHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  xpTitle: {
-    color: Colors.textSecondary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
-  xpValue: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "bold",
-  },
-  xpHint: {
-    color: Colors.textMuted,
-    fontSize: 11,
-    textAlign: "right",
-    marginTop: 2,
-  },
-  statsRow: {
+
+  /* Streak row */
+  streakRow: {
     flexDirection: "row",
     gap: 12,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
-  statCard: {
+  streakCard: {
     flex: 1,
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
-    padding: 16,
     alignItems: "center",
+    gap: 4,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 12,
+    paddingVertical: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    gap: 4,
   },
-  statIcon: {
-    marginBottom: 2,
+  streakCardAtivo: {
+    borderColor: Colors.primaryDark,
+    backgroundColor: Colors.primaryMuted,
   },
-  statEmoji: {
-    fontSize: 18,
-    marginBottom: 2,
-  },
-  statValue: {
+  streakValue: {
     color: Colors.textPrimary,
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: "bold",
   },
-  statLabel: {
+  streakValueAtivo: {
+    color: Colors.primary,
+  },
+  streakLabel: {
     color: Colors.textMuted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
-  attrsCard: {
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    gap: 14,
-  },
-  attrsGrid: {
+
+  /* Section headers */
+  sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
-  },
-  attrItem: {
-    flex: 1,
     alignItems: "center",
-    gap: 4,
-  },
-  attrIcon: {
-    fontSize: 20,
-  },
-  attrValue: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  attrLabel: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    fontWeight: "700",
-    letterSpacing: 1,
+    paddingHorizontal: 24,
+    marginBottom: 12,
   },
   sectionTitle: {
     color: Colors.textSecondary,
@@ -463,37 +367,92 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     letterSpacing: 1.5,
   },
-  actionCard: {
+  sectionLink: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+
+  /* Summary cards */
+  summaryCard: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "rgba(245, 166, 35, 0.08)",
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: "rgba(245, 166, 35, 0.25)",
-    gap: 14,
-  },
-  actionIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
     backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 24,
+    marginBottom: 10,
     borderWidth: 1,
     borderColor: Colors.border,
+    gap: 14,
   },
-  actionEmoji: { fontSize: 20 },
-  actionText: { flex: 1 },
-  actionTitle: {
-    color: Colors.primary,
-    fontSize: 15,
+  summaryIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  summaryText: {
+    flex: 1,
+  },
+  summaryTitle: {
+    color: Colors.textPrimary,
+    fontSize: 14,
     fontWeight: "bold",
-    marginBottom: 3,
+    marginBottom: 2,
   },
-  actionSub: {
-    color: Colors.textSecondary,
+  summarySub: {
+    color: Colors.textMuted,
     fontSize: 12,
-    lineHeight: 17,
+  },
+  summaryBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  summaryBadgeText: {
+    fontSize: 11,
+    fontWeight: "700",
+  },
+
+  /* Attributes */
+  attrsCard: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: 12,
+  },
+  attrRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  attrLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    width: 30,
+  },
+  attrBarBg: {
+    flex: 1,
+    height: 6,
+    backgroundColor: Colors.border,
+    borderRadius: 3,
+    overflow: "hidden",
+  },
+  attrBarFill: {
+    height: "100%",
+    borderRadius: 3,
+  },
+  attrValue: {
+    fontSize: 13,
+    fontWeight: "bold",
+    width: 28,
+    textAlign: "right",
   },
 });

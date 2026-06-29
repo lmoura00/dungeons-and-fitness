@@ -8,8 +8,8 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   TouchableOpacity,
-  Image,
   ScrollView,
+  Image,
   Alert,
 } from "react-native";
 import { router } from "expo-router";
@@ -28,7 +28,6 @@ export default function LoginScreen() {
   const loginMutation = trpc.auth.login.useMutation({
     async onSuccess({ token, usuarioId }) {
       await salvarSessao(token, usuarioId);
-      router.replace("/(tabs)/dashboard");
     },
     onError(error) {
       Alert.alert("Erro ao entrar", error.message);
@@ -54,18 +53,24 @@ export default function LoginScreen() {
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Hero */}
-          <View style={styles.hero}>
+          {/* Logo + identidade */}
+          <View style={styles.brandRow}>
             <View style={styles.logoWrap}>
               <Image
                 source={require("../../../assets/logo_df_circulo 1.png")}
-                style={styles.logoImage}
+                style={styles.logo}
+                resizeMode="contain"
               />
             </View>
-            <Text style={styles.appTitle}>Dungeons & Fitness</Text>
-            <Text style={styles.tagline}>
-              Transforme treinos em conquistas épicas
-            </Text>
+            <View>
+              <Text style={styles.brandName}>Dungeons & Fitness</Text>
+              <Text style={styles.brandTagline}>Bem-vindo de volta, aventureiro</Text>
+            </View>
+          </View>
+
+          {/* Header */}
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Entrar</Text>
           </View>
 
           {/* Form */}
@@ -123,7 +128,6 @@ export default function LoginScreen() {
             />
           </View>
 
-          {/* Footer */}
           <View style={styles.footer}>
             <Text style={styles.footerText}>
               Ao entrar você concorda com os{" "}
@@ -148,49 +152,49 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 60 : 40,
     justifyContent: "center",
   },
-  hero: {
+  brandRow: {
+    flexDirection: "row",
     alignItems: "center",
-    marginBottom: 40,
+    gap: 12,
+    marginBottom: 32,
   },
   logoWrap: {
-    width: 96,
-    height: 96,
-    borderRadius: 48,
-    backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primary,
-    marginBottom: 20,
-    shadowColor: Colors.primary,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 12,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: "hidden",
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
   },
-  logoImage: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+  logo: {
+    width: 52,
+    height: 52,
   },
-  appTitle: {
+  brandName: {
     color: Colors.primary,
-    fontSize: 26,
+    fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 8,
-    textShadowColor: "rgba(245, 166, 35, 0.35)",
+    letterSpacing: 0.3,
+  },
+  brandTagline: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    marginTop: 2,
+  },
+  header: {
+    marginBottom: 20,
+  },
+  headerTitle: {
+    color: Colors.textPrimary,
+    fontSize: 28,
+    fontWeight: "bold",
+    textShadowColor: 'rgba(232, 148, 34, 0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
   },
-  tagline: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textAlign: "center",
-    lineHeight: 20,
-  },
   form: {
     backgroundColor: Colors.surfaceDark,
-    borderRadius: 20,
+    borderRadius: 10,
     padding: 24,
     borderWidth: 1,
     borderColor: Colors.border,
