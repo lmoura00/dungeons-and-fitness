@@ -21,15 +21,22 @@ function RootNavigator() {
 
     const inAuthGroup = segments[0] === "(auth)";
     const inOnboarding = segments[0] === "(onboarding)";
+    const inTabsGroup = segments[0] === "(tabs)";
 
-    if (!isAuthenticated && !inAuthGroup && !inOnboarding) {
-      router.replace("/(auth)/welcome");
-    } else if (isAuthenticated && inAuthGroup && !loadingPersonagem) {
-      if (semPersonagem || !personagem) {
-        router.replace("/(onboarding)/choose-race");
-      } else {
-        router.replace("/(tabs)/dashboard");
-      }
+    if (!isAuthenticated) {
+      // Sem sessão: qualquer rota restaurada (inclusive onboarding) deve voltar pro início.
+      if (!inAuthGroup) router.replace("/(auth)/welcome");
+      return;
+    }
+
+    if (loadingPersonagem) return;
+
+    const temPersonagem = !semPersonagem && !!personagem;
+
+    if (temPersonagem) {
+      if (!inTabsGroup) router.replace("/(tabs)/dashboard");
+    } else if (!inOnboarding) {
+      router.replace("/(onboarding)/choose-race");
     }
   }, [isAuthenticated, isLoadingSession, segments, personagem, loadingPersonagem, semPersonagem]);
 
