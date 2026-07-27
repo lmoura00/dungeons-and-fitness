@@ -2,7 +2,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import type { AppRouter } from "../../../backend/apps/api/src/trpc/router";
+import type { AppRouter } from "../../../backend/src/trpc/router";
 import { obterToken } from "./auth";
 
 export const trpc = createTRPCReact<AppRouter>();
