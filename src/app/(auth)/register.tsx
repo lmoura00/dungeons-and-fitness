@@ -35,6 +35,8 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [gender, setGender] = useState<"M" | "F" | "O">("M");
+  const [weight, setWeight] = useState("");
+  const [height, setHeight] = useState("");
   const [feedback, setFeedback] = useState<FeedbackType>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -72,12 +74,20 @@ export default function RegisterScreen() {
       showError("As senhas não coincidem.");
       return;
     }
+    const pesoKg = Number(weight.replace(",", "."));
+    const alturaCm = Number(height.replace(",", "."));
+    if (!weight.trim() || !height.trim() || !Number.isFinite(pesoKg) || !Number.isFinite(alturaCm) || pesoKg <= 0 || alturaCm <= 0) {
+      showError("Informe peso e altura válidos.");
+      return;
+    }
     registerMutation.mutate({
       email: email.trim(),
       senha: password,
       nomeUsuario: username.trim(),
       nomeCompleto: name.trim(),
       genero: GENERO_MAP[gender],
+      pesoKg,
+      alturaCm,
     });
   };
 
@@ -208,6 +218,29 @@ export default function RegisterScreen() {
                 </TouchableOpacity>
               ))}
             </View>
+
+            <View style={styles.rowFields}>
+              <View style={styles.rowField}>
+                <Text style={styles.fieldLabel}>Peso (kg)</Text>
+                <CustomInput
+                  icon="barbell-outline"
+                  placeholder="Ex: 70"
+                  value={weight}
+                  onChangeText={setWeight}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+              <View style={styles.rowField}>
+                <Text style={styles.fieldLabel}>Altura (cm)</Text>
+                <CustomInput
+                  icon="resize-outline"
+                  placeholder="Ex: 175"
+                  value={height}
+                  onChangeText={setHeight}
+                  keyboardType="decimal-pad"
+                />
+              </View>
+            </View>
           </View>
 
           <View style={styles.actions}>
@@ -337,6 +370,14 @@ const styles = StyleSheet.create({
   generoRow: {
     flexDirection: "row",
     gap: 8,
+  },
+  rowFields: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 16,
+  },
+  rowField: {
+    flex: 1,
   },
   generoButton: {
     flex: 1,
