@@ -54,7 +54,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           {/* Logo + identidade */}
-          <View style={styles.brandRow}>
+          <View style={styles.brandBlock}>
             <View style={styles.logoWrap}>
               <Image
                 source={require("../../../assets/logo_df_circulo 1.png")}
@@ -62,10 +62,8 @@ export default function LoginScreen() {
                 resizeMode="contain"
               />
             </View>
-            <View>
-              <Text style={styles.brandName}>Dungeons & Fitness</Text>
-              <Text style={styles.brandTagline}>Bem-vindo de volta, aventureiro</Text>
-            </View>
+            <Text style={styles.brandName}>Dungeons & Fitness</Text>
+            <Text style={styles.brandTagline}>Bem-vindo de volta, aventureiro</Text>
           </View>
 
           {/* Header */}
@@ -125,6 +123,7 @@ export default function LoginScreen() {
               title="CRIAR CONTA"
               variant="outline"
               onPress={() => router.push("/(auth)/register")}
+              style={styles.createAccountButton}
             />
           </View>
 
@@ -152,42 +151,44 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === "ios" ? 60 : 40,
     justifyContent: "center",
   },
-  brandRow: {
-    flexDirection: "row",
+  brandBlock: {
     alignItems: "center",
-    gap: 12,
-    marginBottom: 32,
+    marginBottom: 20,
   },
   logoWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     overflow: "hidden",
     borderWidth: 1,
     borderColor: Colors.primaryDark,
+    marginBottom: 10,
   },
   logo: {
-    width: 52,
-    height: 52,
+    width: 88,
+    height: 88,
   },
   brandName: {
     color: Colors.primary,
-    fontSize: 16,
+    fontSize: 20,
     fontWeight: "bold",
     letterSpacing: 0.3,
+    textAlign: "center",
   },
   brandTagline: {
-    color: Colors.textMuted,
-    fontSize: 12,
-    marginTop: 2,
+    color: Colors.textSecondary,
+    fontSize: 13,
+    marginTop: 4,
+    textAlign: "center",
   },
   header: {
-    marginBottom: 20,
+    marginBottom: 12,
   },
   headerTitle: {
     color: Colors.textPrimary,
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: "bold",
+    textAlign: "center",
     textShadowColor: 'rgba(232, 148, 34, 0.2)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 8,
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
   form: {
     backgroundColor: Colors.surfaceDark,
     borderRadius: 10,
-    padding: 24,
+    padding: 20,
     borderWidth: 1,
     borderColor: Colors.border,
   },
@@ -221,13 +222,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   loginButton: {
+    height: 44,
     marginTop: 8,
     marginBottom: 0,
+  },
+  createAccountButton: {
+    height: 44,
+    marginVertical: 0,
   },
   divider: {
     flexDirection: "row",
     alignItems: "center",
-    marginVertical: 20,
+    marginVertical: 10,
   },
   dividerLine: {
     flex: 1,
@@ -243,7 +249,7 @@ const styles = StyleSheet.create({
   },
   footer: {
     alignItems: "center",
-    marginTop: 28,
+    marginTop: 16,
   },
   footerText: {
     color: Colors.textMuted,

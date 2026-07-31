@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -115,21 +116,24 @@ export default function RegisterScreen() {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView
           contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
+          showsVerticalScrollIndicator
+          indicatorStyle="white"
+          persistentScrollbar
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.topBar}>
+          <View style={styles.headerRow}>
             <TouchableOpacity
               style={styles.backButton}
               onPress={() => router.canGoBack() ? router.back() : router.replace("/(auth)")}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
-              <Ionicons name="arrow-back" size={22} color={Colors.primary} />
+              <Ionicons name="arrow-back" size={18} color={Colors.primary} />
             </TouchableOpacity>
+            <Text style={styles.heroTitle}>Nova Jornada</Text>
+            <View style={styles.backButtonSpacer} />
           </View>
 
           <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Nova Jornada</Text>
             <Text style={styles.heroSub}>Crie sua conta e comece a aventura</Text>
           </View>
 
@@ -142,6 +146,7 @@ export default function RegisterScreen() {
               placeholder="Seu nome"
               value={name}
               onChangeText={setName}
+              containerStyle={styles.compactField}
             />
 
             <Text style={styles.fieldLabel}>Nome de usuário</Text>
@@ -151,6 +156,7 @@ export default function RegisterScreen() {
               value={username}
               onChangeText={setUsername}
               autoCapitalize="none"
+              containerStyle={styles.compactField}
             />
 
             <Text style={styles.fieldLabel}>E-mail</Text>
@@ -161,6 +167,7 @@ export default function RegisterScreen() {
               onChangeText={setEmail}
               keyboardType="email-address"
               autoCapitalize="none"
+              containerStyle={styles.compactField}
             />
 
             <Text style={styles.fieldLabel}>Senha</Text>
@@ -172,6 +179,7 @@ export default function RegisterScreen() {
                 onChangeText={setPassword}
                 secureTextEntry={!showPassword}
                 style={styles.passwordInput}
+                containerStyle={styles.compactField}
               />
               <TouchableOpacity
                 style={styles.eyeButton}
@@ -193,6 +201,7 @@ export default function RegisterScreen() {
               value={confirmPassword}
               onChangeText={setConfirmPassword}
               secureTextEntry={!showPassword}
+              containerStyle={styles.compactField}
             />
           </View>
 
@@ -248,10 +257,17 @@ export default function RegisterScreen() {
               title={enviando ? "CRIANDO CONTA..." : "CRIAR CONTA"}
               onPress={handleRegister}
               disabled={enviando}
+              style={styles.submitButton}
             />
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>
+
+      <LinearGradient
+        colors={["transparent", Colors.background]}
+        pointerEvents="none"
+        style={styles.scrollFade}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -264,8 +280,15 @@ const styles = StyleSheet.create({
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
-    paddingBottom: 48,
-    paddingTop: Platform.OS === "ios" ? 52 : 32,
+    paddingBottom: 32,
+    paddingTop: Platform.OS === "ios" ? 40 : 24,
+  },
+  scrollFade: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 28,
   },
   toast: {
     position: "absolute",
@@ -302,57 +325,67 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     lineHeight: 18,
   },
-  topBar: {
-    marginBottom: 20,
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 6,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 34,
+    height: 34,
+    borderRadius: 17,
     backgroundColor: Colors.surfaceDark,
     justifyContent: "center",
     alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
   },
+  backButtonSpacer: {
+    width: 34,
+  },
   hero: {
-    marginBottom: 28,
+    marginBottom: 10,
   },
   heroTitle: {
+    flex: 1,
     color: Colors.primary,
-    fontSize: 28,
+    fontSize: 20,
     fontWeight: "bold",
-    marginBottom: 6,
+    textAlign: "center",
     textShadowColor: 'rgba(232, 148, 34, 0.3)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 6,
   },
   heroSub: {
     color: Colors.textSecondary,
-    fontSize: 14,
+    fontSize: 12,
+    textAlign: "center",
   },
   section: {
     backgroundColor: Colors.surfaceDark,
     borderRadius: 10,
-    padding: 20,
+    padding: 14,
     borderWidth: 1,
     borderColor: Colors.border,
-    marginBottom: 16,
+    marginBottom: 10,
   },
   sectionLabel: {
     color: Colors.textMuted,
     fontSize: 11,
     fontWeight: "700",
     letterSpacing: 1.5,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   fieldLabel: {
     color: Colors.textSecondary,
     fontSize: 12,
     fontWeight: "600",
-    marginBottom: 4,
+    marginBottom: 3,
     marginLeft: 4,
     letterSpacing: 0.3,
+  },
+  compactField: {
+    marginBottom: 8,
   },
   passwordWrap: {
     position: "relative",
@@ -374,14 +407,14 @@ const styles = StyleSheet.create({
   rowFields: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 16,
+    marginTop: 10,
   },
   rowField: {
     flex: 1,
   },
   generoButton: {
     flex: 1,
-    paddingVertical: 12,
+    paddingVertical: 9,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -403,6 +436,9 @@ const styles = StyleSheet.create({
   },
   actions: {
     marginTop: 4,
+  },
+  submitButton: {
+    height: 48,
   },
   divider: {
     flexDirection: "row",

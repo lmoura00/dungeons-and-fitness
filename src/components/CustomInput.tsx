@@ -5,13 +5,14 @@ import { Colors } from '../constants/Colors';
 
 interface CustomInputProps extends TextInputProps {
   icon?: keyof typeof Ionicons.glyphMap;
+  containerStyle?: TextInputProps["style"];
 }
 
-export function CustomInput({ style, icon, onFocus, onBlur, ...rest }: CustomInputProps) {
+export function CustomInput({ style, containerStyle, icon, onFocus, onBlur, ...rest }: CustomInputProps) {
   const [focused, setFocused] = useState(false);
 
   return (
-    <View style={[styles.container, focused && styles.containerFocused]}>
+    <View style={[styles.container, focused && styles.containerFocused, containerStyle]}>
       {icon && (
         <Ionicons
           name={icon}
