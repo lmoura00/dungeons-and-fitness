@@ -67,19 +67,34 @@ export default function DashboardScreen() {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.headerRow}>
-            <Image source={avatarSource} style={styles.headerAvatar} />
-            <Text style={styles.headerGreeting}>{getSaudacao()}</Text>
+            <View style={styles.headerLeft}>
+              <Image source={avatarSource} style={styles.headerAvatar} />
+              <View>
+                <Text style={styles.headerGreeting}>{getSaudacao()},</Text>
+                <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
+              </View>
+            </View>
             <TouchableOpacity style={styles.bellButton}>
               <Ionicons name="notifications-outline" size={20} color={Colors.textSecondary} />
             </TouchableOpacity>
           </View>
-
-          <Text style={styles.heroTitle}>
-            Hey, {personagem?.name ?? "Aventureiro"}
-          </Text>
-          <Text style={styles.heroSub}>
-            {isLoading ? "Carregando..." : `${personagem?.race?.name ?? "—"} · ${personagem?.class?.name ?? "—"} · Nível ${nivel}`}
-          </Text>
+          <View style={styles.headerBadges}>
+            {isLoading ? (
+              <Text style={styles.headerBadgesLoading}>Carregando...</Text>
+            ) : (
+              <>
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeText}>{personagem?.race?.name ?? "—"}</Text>
+                </View>
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeText}>{personagem?.class?.name ?? "—"}</Text>
+                </View>
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeText}>Nível {nivel}</Text>
+                </View>
+              </>
+            )}
+          </View>
         </View>
 
         {/* Featured Card */}
@@ -90,49 +105,74 @@ export default function DashboardScreen() {
             end={{ x: 1, y: 1 }}
             style={styles.featuredGradient}
           >
+            <View style={styles.avatarFrame}>
+              <Image
+                source={avatarSource}
+                style={styles.featuredAvatar}
+                resizeMode="cover"
+              />
+            </View>
             <View style={styles.featuredLeft}>
               <View style={styles.featuredBadge}>
                 <Ionicons name="flash" size={11} color={Colors.primary} />
                 <Text style={styles.featuredBadgeText}>{patamar}</Text>
               </View>
-              <Text style={styles.featuredTitle}>{personagem?.name ?? "Aventureiro"}</Text>
-              <Text style={styles.featuredSub}>
-                {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
-              </Text>
+              <Text style={styles.featuredTitle}>{personagem?.class?.name ?? "Aventureiro"}</Text>
               <View style={styles.featuredBarWrap}>
+                <Text style={styles.featuredSub}>
+                  {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+                </Text>
                 <ProgressBar progress={progresso} />
               </View>
             </View>
-            <Image
-              source={avatarSource}
-              style={styles.featuredAvatar}
-              resizeMode="contain"
-            />
           </LinearGradient>
         </View>
 
         {/* Streak row */}
         <View style={styles.streakRow}>
           <View style={[styles.streakCard, streakAtivo && styles.streakCardAtivo]}>
-            <Ionicons name="flame" size={20} color={streakAtivo ? Colors.primary : Colors.textMuted} />
+            <Ionicons name="flame" size={22} color={streakAtivo ? Colors.primary : Colors.textMuted} />
             <Text style={[styles.streakValue, streakAtivo && styles.streakValueAtivo]}>
               {diasSequencia}
             </Text>
             <Text style={styles.streakLabel}>Streak</Text>
           </View>
           <View style={styles.streakCard}>
-            <Ionicons name="star" size={20} color={Colors.gold} />
+            <Ionicons name="star" size={22} color={Colors.gold} />
             <Text style={styles.streakValue}>
               {personagem?.currentXp?.toLocaleString("pt-BR") ?? "0"}
             </Text>
             <Text style={styles.streakLabel}>XP Total</Text>
           </View>
           <View style={styles.streakCard}>
-            <Ionicons name="trending-up" size={20} color={Colors.statAgility} />
+            <Ionicons name="trending-up" size={22} color={Colors.statAgility} />
             <Text style={styles.streakValue}>{nivel}</Text>
             <Text style={styles.streakLabel}>Nível</Text>
           </View>
         </View>
+
+        {/* Ação Principal */}
+        <TouchableOpacity
+          style={styles.ctaWrapper}
+          onPress={() => router.push("/(tabs)/log-activity")}
+          activeOpacity={0.85}
+        >
+          <LinearGradient
+            colors={[Colors.primary, Colors.primaryBase]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.ctaGradient}
+          >
+            <View style={styles.ctaIconWrap}>
+              <Ionicons name="add-circle" size={26} color={Colors.textOnPrimary} />
+            </View>
+            <View style={styles.ctaTextWrap}>
+              <Text style={styles.ctaTitle}>Registrar Atividade</Text>
+              <Text style={styles.ctaSub}>Ganhe XP e atributos com cada treino</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color={Colors.textOnPrimary} />
+          </LinearGradient>
+        </TouchableOpacity>
 
         {/* Daily Summary */}
         <View style={styles.sectionHeader}>
@@ -156,23 +196,6 @@ export default function DashboardScreen() {
           </View>
           <View style={[styles.summaryBadge, { backgroundColor: Colors.primaryMuted }]}>
             <Text style={[styles.summaryBadgeText, { color: Colors.primary }]}>Missões</Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.summaryCard}
-          onPress={() => router.push("/(tabs)/log-activity")}
-          activeOpacity={0.8}
-        >
-          <View style={[styles.summaryIconWrap, { backgroundColor: "#1A3A2A" }]}>
-            <Ionicons name="add-circle" size={20} color={Colors.statAgility} />
-          </View>
-          <View style={styles.summaryText}>
-            <Text style={styles.summaryTitle}>Registrar Atividade</Text>
-            <Text style={styles.summarySub}>Ganhe XP e atributos com cada treino</Text>
-          </View>
-          <View style={[styles.summaryBadge, { backgroundColor: "#1A3A2A" }]}>
-            <Text style={[styles.summaryBadgeText, { color: Colors.statAgility }]}>XP</Text>
           </View>
         </TouchableOpacity>
 
@@ -214,27 +237,65 @@ const styles = StyleSheet.create({
   header: {
     paddingHorizontal: 24,
     paddingTop: Platform.OS === "ios" ? 12 : 48,
-    paddingBottom: 24,
+    paddingBottom: 20,
   },
   headerRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    marginBottom: 20,
+    justifyContent: "space-between",
+  },
+  headerLeft: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
   headerAvatar: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     backgroundColor: Colors.surfaceDark,
-    borderWidth: 1.5,
+    borderWidth: 2,
     borderColor: Colors.primaryDark,
   },
   headerGreeting: {
-    flex: 1,
-    color: Colors.textSecondary,
-    fontSize: 14,
-    fontWeight: "500",
+    color: Colors.textMuted,
+    fontSize: 13,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 1,
+  },
+  headerName: {
+    color: Colors.textPrimary,
+    fontSize: 28,
+    fontWeight: "bold",
+    letterSpacing: -0.3,
+  },
+  headerBadges: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+    marginTop: 14,
+  },
+  headerBadge: {
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 999,
+    backgroundColor: Colors.surfaceDark,
+    borderWidth: 1,
+    borderColor: "rgba(255, 178, 63, 0.4)",
+  },
+  headerBadgeText: {
+    color: Colors.primary,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 0.3,
+    textAlign: "center",
+  },
+  headerBadgesLoading: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    marginTop: 10,
   },
   bellButton: {
     width: 36,
@@ -245,17 +306,6 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     justifyContent: "center",
     alignItems: "center",
-  },
-  heroTitle: {
-    color: Colors.textPrimary,
-    fontSize: 30,
-    fontWeight: "bold",
-    letterSpacing: -0.5,
-    marginBottom: 6,
-  },
-  heroSub: {
-    color: Colors.textMuted,
-    fontSize: 14,
   },
 
   /* Featured card */
@@ -272,6 +322,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     padding: 20,
     minHeight: 140,
+  },
+  avatarFrame: {
+    width: 96,
+    height: 116,
+    borderRadius: 14,
+    backgroundColor: "#2A1B0E",
+    borderWidth: 1,
+    borderColor: "rgba(255, 178, 63, 0.35)",
+    marginRight: 16,
+    overflow: "hidden",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    elevation: 6,
   },
   featuredLeft: {
     flex: 1,
@@ -301,19 +366,21 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     fontSize: 20,
     fontWeight: "bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
   },
   featuredSub: {
     color: Colors.textSecondary,
     fontSize: 12,
+    marginBottom: 4,
   },
   featuredBarWrap: {
-    marginTop: 4,
-    width: "85%",
+    marginTop: 6,
+    width: "100%",
   },
   featuredAvatar: {
-    width: 90,
-    height: 110,
-    borderRadius: 8,
+    width: "100%",
+    height: "100%",
   },
 
   /* Streak row */
@@ -321,7 +388,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     gap: 12,
     paddingHorizontal: 24,
-    marginBottom: 24,
+    marginBottom: 20,
   },
   streakCard: {
     flex: 1,
@@ -334,8 +401,13 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   streakCardAtivo: {
-    borderColor: Colors.primaryDark,
+    borderColor: Colors.primary,
     backgroundColor: Colors.primaryMuted,
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.45,
+    shadowRadius: 8,
+    elevation: 4,
   },
   streakValue: {
     color: Colors.textPrimary,
@@ -351,6 +423,49 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     textTransform: "uppercase",
     letterSpacing: 0.5,
+  },
+
+  /* Ação principal (CTA) */
+  ctaWrapper: {
+    marginHorizontal: 24,
+    marginBottom: 24,
+    borderRadius: 16,
+    overflow: "hidden",
+    shadowColor: Colors.primary,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  ctaGradient: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 18,
+    paddingHorizontal: 18,
+    gap: 14,
+  },
+  ctaIconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: "rgba(26, 15, 0, 0.18)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  ctaTextWrap: {
+    flex: 1,
+  },
+  ctaTitle: {
+    color: Colors.textOnPrimary,
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 2,
+  },
+  ctaSub: {
+    color: Colors.textOnPrimary,
+    opacity: 0.75,
+    fontSize: 12,
+    fontWeight: "500",
   },
 
   /* Section headers */
@@ -429,30 +544,32 @@ const styles = StyleSheet.create({
   attrRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
+    gap: 12,
   },
   attrLabel: {
-    color: Colors.textMuted,
-    fontSize: 11,
+    color: Colors.textSecondary,
+    fontSize: 12,
     fontWeight: "700",
     letterSpacing: 1,
-    width: 30,
+    width: 32,
   },
   attrBarBg: {
     flex: 1,
-    height: 6,
-    backgroundColor: Colors.border,
-    borderRadius: 3,
+    height: 10,
+    backgroundColor: "rgba(0, 0, 0, 0.3)",
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: Colors.border,
     overflow: "hidden",
   },
   attrBarFill: {
     height: "100%",
-    borderRadius: 3,
+    borderRadius: 5,
   },
   attrValue: {
-    fontSize: 13,
+    fontSize: 15,
     fontWeight: "bold",
-    width: 28,
+    width: 32,
     textAlign: "right",
   },
 });
