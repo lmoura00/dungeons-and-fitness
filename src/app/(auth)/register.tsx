@@ -10,6 +10,7 @@ import {
   ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -93,10 +94,11 @@ export default function RegisterScreen() {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : "height"}
-    >
+    <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+      >
       {feedback && (
         <View style={[styles.toast, feedback.type === "success" ? styles.toastSuccess : styles.toastError]}>
           <Ionicons
@@ -268,7 +270,8 @@ export default function RegisterScreen() {
         pointerEvents="none"
         style={styles.scrollFade}
       />
-    </KeyboardAvoidingView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 
@@ -277,11 +280,14 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: Colors.background,
   },
+  keyboardView: {
+    flex: 1,
+  },
   scroll: {
     flexGrow: 1,
     paddingHorizontal: 24,
     paddingBottom: 32,
-    paddingTop: Platform.OS === "ios" ? 40 : 24,
+    paddingTop: 16,
   },
   scrollFade: {
     position: "absolute",
@@ -292,7 +298,7 @@ const styles = StyleSheet.create({
   },
   toast: {
     position: "absolute",
-    top: Platform.OS === "ios" ? 56 : 36,
+    top: 12,
     left: 16,
     right: 16,
     zIndex: 999,

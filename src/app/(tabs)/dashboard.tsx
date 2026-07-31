@@ -3,12 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   Image,
   TouchableOpacity,
-  Platform,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -55,7 +54,7 @@ export default function DashboardScreen() {
   const avatarSource = getAvatar(personagem?.class?.name, personagem?.race?.name, usuario?.gender);
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <LinearGradient
         colors={[Colors.surface, Colors.background]}
         start={{ x: 0.5, y: 0 }}
@@ -236,7 +235,7 @@ const styles = StyleSheet.create({
   /* Header */
   header: {
     paddingHorizontal: 24,
-    paddingTop: Platform.OS === "ios" ? 12 : 48,
+    paddingTop: 12,
     paddingBottom: 20,
   },
   headerRow: {

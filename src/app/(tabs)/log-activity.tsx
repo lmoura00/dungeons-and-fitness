@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   KeyboardAvoidingView,
@@ -13,6 +12,7 @@ import {
   Modal,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
@@ -94,7 +94,7 @@ export default function LogActivityScreen() {
   const podeSalvar = !!tipoAtividade && !!minutes.trim() && !!intensidade;
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={["top"]}>
       <LinearGradient
         colors={[Colors.surface, Colors.background]}
         start={{ x: 0.5, y: 0 }}
@@ -258,7 +258,7 @@ const styles = StyleSheet.create({
   content: {
     paddingHorizontal: 24,
     paddingBottom: 40,
-    paddingTop: Platform.OS === "ios" ? 10 : 50,
+    paddingTop: 10,
     flexGrow: 1,
   },
   topBar: {

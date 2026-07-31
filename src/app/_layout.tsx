@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { Stack, useSegments, useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { Colors } from "../constants/Colors";
 import { TRPCProvider } from "../providers/TRPCProvider";
 import { useSession } from "../hooks/useSession";
@@ -56,9 +57,11 @@ function RootNavigator() {
 
 export default function RootLayout() {
   return (
-    <TRPCProvider>
-      <StatusBar style="light" backgroundColor={Colors.background} />
-      <RootNavigator />
-    </TRPCProvider>
+    <SafeAreaProvider>
+      <TRPCProvider>
+        <StatusBar style="light" backgroundColor={Colors.background} />
+        <RootNavigator />
+      </TRPCProvider>
+    </SafeAreaProvider>
   );
 }

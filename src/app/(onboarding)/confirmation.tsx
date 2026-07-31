@@ -4,12 +4,11 @@ import {
   Text,
   StyleSheet,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   Image,
-  Platform,
   Alert,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
@@ -134,7 +133,7 @@ const styles = StyleSheet.create({
   content: {
     padding: 24,
     flexGrow: 1,
-    paddingTop: Platform.OS === "ios" ? 10 : 20,
+    paddingTop: 10,
   },
   header: {
     flexDirection: "row",
