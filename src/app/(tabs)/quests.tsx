@@ -10,9 +10,9 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { trpc } from "../../lib/trpc";
 
 const DIFICULDADE_COR: Record<string, string> = {
@@ -59,26 +59,18 @@ export default function QuestsScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/dashboard")}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={22} color={Colors.primary} />
-        </TouchableOpacity>
-        <View style={styles.headerText}>
-          <Text style={styles.headerTitle}>Missões</Text>
-          <Text style={styles.headerSub}>
-            {total > 0 ? `${concluidas} de ${total} concluídas hoje` : "Sem missões geradas"}
-          </Text>
-        </View>
-        {total > 0 && (
-          <View style={styles.progressCircle}>
-            <Text style={styles.progressText}>{Math.round((concluidas / total) * 100)}%</Text>
-          </View>
-        )}
-      </View>
+      <ScreenHeader
+        title="Missões"
+        subtitle={total > 0 ? `${concluidas} de ${total} concluídas hoje` : "Sem missões geradas"}
+        style={styles.header}
+        rightSlot={
+          total > 0 ? (
+            <View style={styles.progressCircle}>
+              <Text style={styles.progressText}>{Math.round((concluidas / total) * 100)}%</Text>
+            </View>
+          ) : undefined
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
@@ -199,37 +191,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  headerText: {
-    flex: 1,
-  },
-  headerTitle: {
-    color: Colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  headerSub: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    marginTop: 2,
   },
   progressCircle: {
     width: 48,

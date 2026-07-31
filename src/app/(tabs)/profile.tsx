@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { trpc } from "../../lib/trpc";
 import { limparSessao } from "../../lib/auth";
 import { getAvatar } from "../../utils/getAvatar";
@@ -83,20 +84,16 @@ export default function ProfileScreen() {
         style={StyleSheet.absoluteFill}
       />
 
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/dashboard")}
-          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-        >
-          <Ionicons name="arrow-back" size={22} color={Colors.primary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Ficha</Text>
-        <TouchableOpacity style={styles.sairButton} onPress={handleSair}>
-          <Ionicons name="log-out-outline" size={18} color={Colors.textMuted} />
-          <Text style={styles.sairText}>Sair</Text>
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        title="Ficha"
+        style={styles.header}
+        rightSlot={
+          <TouchableOpacity style={styles.sairButton} onPress={handleSair}>
+            <Ionicons name="log-out-outline" size={18} color={Colors.textMuted} />
+            <Text style={styles.sairText}>Sair</Text>
+          </TouchableOpacity>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Avatar Card */}
@@ -256,30 +253,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.background,
   },
   header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 10,
-    paddingBottom: 16,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  headerTitle: {
-    flex: 1,
-    color: Colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "bold",
   },
   sairButton: {
     flexDirection: "row",

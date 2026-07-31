@@ -20,6 +20,7 @@ import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { ProgressBar } from "../../components/ProgressBar";
+import { ScreenHeader } from "../../components/ScreenHeader";
 import { trpc } from "../../lib/trpc";
 
 type TipoAtividade = "corrida" | "forca" | "ciclismo" | "natacao" | "yoga" | "esporte" | "outro";
@@ -112,19 +113,12 @@ export default function LogActivityScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
-            <View style={styles.topBar}>
-              <TouchableOpacity
-                style={styles.backButton}
-                onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)/dashboard")}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              >
-                <Ionicons name="arrow-back" size={22} color={Colors.primary} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.header}>
-              <Text style={styles.headerTitle}>Registrar Atividade</Text>
-              <Text style={styles.headerSub}>Registre seu treino e ganhe XP</Text>
-            </View>
+            <ScreenHeader
+              title="Registrar Atividade"
+              subtitle="Registre seu treino e ganhe XP"
+              showBackButton
+              style={styles.header}
+            />
 
             <View style={styles.formCard}>
               <Text style={styles.label}>Tipo de Atividade</Text>
@@ -261,31 +255,10 @@ const styles = StyleSheet.create({
     paddingTop: 10,
     flexGrow: 1,
   },
-  topBar: {
-    marginBottom: 16,
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
   header: {
-    marginBottom: 24,
-  },
-  headerTitle: {
-    color: Colors.textPrimary,
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  headerSub: {
-    color: Colors.textMuted,
-    fontSize: 13,
-    marginTop: 4,
+    paddingHorizontal: 0,
+    paddingTop: 0,
+    marginBottom: 20,
   },
   formCard: {
     backgroundColor: Colors.surfaceDark,
