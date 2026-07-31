@@ -74,13 +74,6 @@ export default function ChooseRaceScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.replace('/(tabs)/dashboard')}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-          >
-            <Ionicons name="arrow-back" size={24} color={Colors.primary} />
-          </TouchableOpacity>
           <TouchableOpacity onPress={() => { limparNovaContaPendente(); router.replace('/(tabs)/dashboard'); }}>
              <Text style={styles.skipText}>Pular ➝</Text>
           </TouchableOpacity>
@@ -162,21 +155,11 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingTop: Platform.OS === 'ios' ? 10 : 20, 
   },
-  header: { 
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
-    marginBottom: 32 
-  },
-  backButton: { 
-    width: 44, 
-    height: 44, 
-    borderRadius: 22, 
-    backgroundColor: Colors.surfaceDark, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderWidth: 1, 
-    borderColor: Colors.border 
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
+    marginBottom: 32
   },
   skipText: { 
     color: Colors.textMuted, 
