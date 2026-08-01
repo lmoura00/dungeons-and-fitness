@@ -36,10 +36,10 @@ const TIPOS: { value: TipoAtividade; label: string; ionicon: string }[] = [
   { value: "outro",     label: "Outro",     ionicon: "fitness" },
 ];
 
-const INTENSIDADES: { value: Intensidade; label: string; cor: string }[] = [
-  { value: "leve",     label: "Leve",      cor: Colors.statVitality },
-  { value: "moderado", label: "Moderado",  cor: Colors.primary      },
-  { value: "intenso",  label: "Intenso",   cor: Colors.crimson      },
+const INTENSIDADES: { value: Intensidade; label: string }[] = [
+  { value: "leve",     label: "Leve"     },
+  { value: "moderado", label: "Moderado" },
+  { value: "intenso",  label: "Intenso"  },
 ];
 
 const XP_POR_NIVEL = 3000;
@@ -134,7 +134,7 @@ export default function LogActivityScreen() {
                       <Ionicons
                         name={tipo.ionicon as any}
                         size={16}
-                        color={ativo ? Colors.primary : Colors.textMuted}
+                        color={ativo ? Colors.textOnPrimary : Colors.textMuted}
                       />
                       <Text style={[styles.tipoLabel, ativo && styles.tipoLabelAtivo]}>
                         {tipo.label}
@@ -154,28 +154,20 @@ export default function LogActivityScreen() {
 
               <Text style={styles.label}>Intensidade</Text>
               <View style={styles.intensidadeRow}>
-                {INTENSIDADES.map((item) => (
-                  <TouchableOpacity
-                    key={item.value}
-                    style={[
-                      styles.intensidadeButton,
-                      intensidade === item.value && {
-                        borderColor: item.cor,
-                        backgroundColor: `${item.cor}20`,
-                      },
-                    ]}
-                    onPress={() => setIntensidade(item.value)}
-                  >
-                    <Text
-                      style={[
-                        styles.intensidadeText,
-                        intensidade === item.value && { color: item.cor },
-                      ]}
+                {INTENSIDADES.map((item) => {
+                  const ativo = intensidade === item.value;
+                  return (
+                    <TouchableOpacity
+                      key={item.value}
+                      style={[styles.intensidadeButton, ativo && styles.intensidadeButtonAtivo]}
+                      onPress={() => setIntensidade(item.value)}
                     >
-                      {item.label}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <Text style={[styles.intensidadeText, ativo && styles.intensidadeTextAtivo]}>
+                        {item.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
 
               <View style={styles.infoBox}>
@@ -297,8 +289,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surface,
   },
   tipoButtonAtivo: {
-    borderColor: Colors.primaryBase,
-    backgroundColor: Colors.primaryMuted,
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
   },
   tipoLabel: {
     color: Colors.textMuted,
@@ -306,7 +298,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   tipoLabelAtivo: {
-    color: Colors.primary,
+    color: Colors.textOnPrimary,
   },
   intensidadeRow: {
     flexDirection: "row",
@@ -319,12 +311,20 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: Colors.border,
+    backgroundColor: Colors.surface,
     alignItems: "center",
+  },
+  intensidadeButtonAtivo: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.primary,
   },
   intensidadeText: {
     color: Colors.textSecondary,
     fontSize: 13,
     fontWeight: "bold",
+  },
+  intensidadeTextAtivo: {
+    color: Colors.textOnPrimary,
   },
   infoBox: {
     flexDirection: "row",
