@@ -7,6 +7,7 @@ import { Colors } from "../../constants/Colors";
 type IoniconName = React.ComponentProps<typeof Ionicons>["name"];
 
 const TAB_BAR_BASE_HEIGHT = 56;
+const TAB_BAR_BOTTOM_SPACING = 8;
 
 const TAB_ITEMS: { name: string; label: string; icon: IoniconName; iconActive: IoniconName }[] = [
   { name: "dashboard",    label: "Home",      icon: "home-outline",       iconActive: "home" },
@@ -27,8 +28,8 @@ export default function TabsLayout() {
           backgroundColor: Colors.surface,
           borderTopWidth: 1,
           borderTopColor: Colors.border,
-          height: TAB_BAR_BASE_HEIGHT + insets.bottom,
-          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: TAB_BAR_BASE_HEIGHT + insets.bottom + TAB_BAR_BOTTOM_SPACING,
+          paddingBottom: (insets.bottom > 0 ? insets.bottom : 8) + TAB_BAR_BOTTOM_SPACING,
           paddingTop: 8,
         },
         tabBarActiveTintColor: Colors.primary,
