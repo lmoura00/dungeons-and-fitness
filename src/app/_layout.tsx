@@ -6,6 +6,7 @@ import { Colors } from "../constants/Colors";
 import { TRPCProvider } from "../providers/TRPCProvider";
 import { useSession } from "../hooks/useSession";
 import { trpc } from "../lib/trpc";
+import { obterPushToken } from "../lib/notifications";
 
 function RootNavigator() {
   const { isAuthenticated, isLoadingSession } = useSession();
@@ -16,6 +17,8 @@ function RootNavigator() {
     undefined,
     { enabled: !!isAuthenticated, retry: false }
   );
+
+  const temPersonagem = !semPersonagem && !!personagem;
 
   useEffect(() => {
     if (isLoadingSession) return;
@@ -32,14 +35,22 @@ function RootNavigator() {
 
     if (loadingPersonagem) return;
 
-    const temPersonagem = !semPersonagem && !!personagem;
-
     if (temPersonagem) {
       if (!inTabsGroup) router.replace("/(tabs)/dashboard");
     } else if (!inOnboarding) {
       router.replace("/(onboarding)/choose-race");
     }
-  }, [isAuthenticated, isLoadingSession, segments, personagem, loadingPersonagem, semPersonagem]);
+  }, [isAuthenticated, isLoadingSession, segments, personagem, loadingPersonagem, semPersonagem, temPersonagem]);
+
+  const atualizarPushTokenMutation = trpc.usuarios.atualizarPushToken.useMutation();
+
+  useEffect(() => {
+    if (!isAuthenticated || !temPersonagem) return;
+    obterPushToken().then((pushToken) => {
+      if (pushToken) atualizarPushTokenMutation.mutate({ pushToken });
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, temPersonagem]);
 
   return (
     <Stack
