@@ -12,6 +12,7 @@ const TAB_ITEMS: { name: string; label: string; icon: IoniconName; iconActive: I
   { name: "dashboard",    label: "Home",      icon: "home-outline",       iconActive: "home" },
   { name: "quests",       label: "Missões",   icon: "shield-outline",     iconActive: "shield" },
   { name: "log-activity", label: "Registrar", icon: "add-circle-outline", iconActive: "add-circle" },
+  { name: "guild",        label: "Guilda",    icon: "people-outline",     iconActive: "people" },
   { name: "profile",      label: "Perfil",    icon: "person-outline",     iconActive: "person" },
 ];
 
