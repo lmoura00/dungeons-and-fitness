@@ -17,17 +17,18 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors } from "../../constants/Colors";
-import { CustomInput } from "../../components/CustomInput";
-import { PrimaryButton } from "../../components/PrimaryButton";
-import { ProgressBar } from "../../components/ProgressBar";
-import { ScreenHeader } from "../../components/ScreenHeader";
-import { GuildEmblemIcon, GUILD_EMBLEMAS, type GuildEmblem } from "../../components/GuildEmblemIcon";
-import { trpc } from "../../lib/trpc";
-import { getAvatar } from "../../utils/getAvatar";
+import { router } from "expo-router";
+import { Colors } from "../../../constants/Colors";
+import { CustomInput } from "../../../components/CustomInput";
+import { PrimaryButton } from "../../../components/PrimaryButton";
+import { ProgressBar } from "../../../components/ProgressBar";
+import { ScreenHeader } from "../../../components/ScreenHeader";
+import { GuildEmblemIcon, GUILD_EMBLEMAS, type GuildEmblem } from "../../../components/GuildEmblemIcon";
+import { GuildListCard, MAX_MEMBROS_GUILDA } from "../../../components/GuildListCard";
+import { trpc } from "../../../lib/trpc";
+import { getAvatar } from "../../../utils/getAvatar";
 
 const GUILD_XP_POR_NIVEL = 5000;
-const MAX_MEMBROS_GUILDA = 10;
 
 export default function GuildScreen() {
   const utils = trpc.useUtils();
@@ -36,7 +37,6 @@ export default function GuildScreen() {
   const [descricao, setDescricao] = useState("");
   const [emblema, setEmblema] = useState<GuildEmblem>("escudo");
   const [busca, setBusca] = useState("");
-  const [explorando, setExplorando] = useState(false);
   const [confirmarSairVisible, setConfirmarSairVisible] = useState(false);
 
   const { data: minhaGuilda, isLoading: loadingMinhaGuilda } = trpc.guildas.minhaGuilda.useQuery();
@@ -84,10 +84,7 @@ export default function GuildScreen() {
   });
 
   const sairMutation = trpc.guildas.sair.useMutation({
-    onSuccess: () => {
-      setExplorando(false);
-      invalidarGuildas();
-    },
+    onSuccess: invalidarGuildas,
     onError: (e) => Alert.alert("Erro ao sair da guilda", e.message),
   });
 
@@ -123,97 +120,14 @@ export default function GuildScreen() {
 
       <ScreenHeader
         title="Guilda"
-        subtitle={
-          minhaGuilda
-            ? explorando
-              ? "Explorando outras guildas"
-              : minhaGuilda.name
-            : "Junte-se a uma guilda ou funde a sua"
-        }
+        subtitle={minhaGuilda ? minhaGuilda.name : "Junte-se a uma guilda ou funde a sua"}
         style={styles.header}
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
-        ) : minhaGuilda ? explorando ? (
-          <>
-            <TouchableOpacity
-              style={styles.voltarLink}
-              onPress={() => setExplorando(false)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="arrow-back" size={16} color={Colors.primary} />
-              <Text style={styles.voltarLinkText}>Voltar para minha guilda</Text>
-            </TouchableOpacity>
-
-            <CustomInput
-              icon="search-outline"
-              placeholder="🔍 Buscar guilda por nome..."
-              value={busca}
-              onChangeText={setBusca}
-              containerStyle={styles.buscaInput}
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            {!guildasFiltradas || guildasFiltradas.length === 0 ? (
-              <View style={styles.emptyState}>
-                <Ionicons name="search-outline" size={48} color={Colors.textMuted} />
-                <Text style={styles.emptyTitle}>Nenhuma guilda encontrada</Text>
-                <Text style={styles.emptyDesc}>Tente buscar por outro nome.</Text>
-              </View>
-            ) : (
-              <View style={styles.guildasList}>
-                {guildasFiltradas.map((guilda) => {
-                  const suaGuilda = guilda.id === minhaGuilda.id;
-                  return (
-                    <View key={guilda.id} style={styles.guildaListCard}>
-                      <View style={styles.guildaCrestSmall}>
-                        <LinearGradient
-                          colors={[Colors.gold, Colors.primaryDark]}
-                          start={{ x: 0, y: 0 }}
-                          end={{ x: 1, y: 1 }}
-                          style={styles.guildaCrestRing}
-                        >
-                          <View style={styles.guildaCrestInner}>
-                            <GuildEmblemIcon emblem={guilda.emblem as GuildEmblem} size={20} />
-                          </View>
-                        </LinearGradient>
-                      </View>
-                      <View style={styles.guildaListInfo}>
-                        <Text style={styles.guildaListName} numberOfLines={1}>{guilda.name}</Text>
-                        {guilda.description ? (
-                          <View style={styles.guildaMottoTag}>
-                            <Text style={styles.guildaMottoTagText} numberOfLines={1}>
-                              {guilda.description}
-                            </Text>
-                          </View>
-                        ) : null}
-                        <View style={styles.guildaListMetaRow}>
-                          <Text style={styles.guildaListMeta}>
-                            👥 {guilda.members.length}/{MAX_MEMBROS_GUILDA}
-                          </Text>
-                          <Text style={styles.guildaListMetaDot}>•</Text>
-                          <Text style={styles.guildaListXp}>{guilda.totalXp.toLocaleString("pt-BR")} XP</Text>
-                        </View>
-                      </View>
-                      {suaGuilda ? (
-                        <View style={[styles.roleTag, styles.roleTagLeader]}>
-                          <Text style={[styles.roleTagText, styles.roleTagTextLeader]}>Sua guilda</Text>
-                        </View>
-                      ) : (
-                        <View style={[styles.entrarButton, styles.entrarButtonCheia]}>
-                          <Text style={[styles.entrarText, styles.entrarTextCheia]}>Indisponível</Text>
-                        </View>
-                      )}
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </>
-        ) : (
+        ) : minhaGuilda ? (
           <>
             <View style={styles.guildCard}>
               {/* Cabeçalho do clã */}
@@ -292,7 +206,7 @@ export default function GuildScreen() {
 
             <TouchableOpacity
               style={styles.explorarLink}
-              onPress={() => setExplorando(true)}
+              onPress={() => router.push("/(tabs)/guild/explorar")}
               activeOpacity={0.7}
             >
               <Ionicons name="compass-outline" size={16} color={Colors.primary} />
@@ -354,59 +268,16 @@ export default function GuildScreen() {
             ) : (
               <View style={styles.guildasList}>
                 {guildasFiltradas.map((guilda) => (
-                  <View key={guilda.id} style={styles.guildaListCard}>
-                    <View style={styles.guildaCrestSmall}>
-                      <LinearGradient
-                        colors={[Colors.gold, Colors.primaryDark]}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={styles.guildaCrestRing}
-                      >
-                        <View style={styles.guildaCrestInner}>
-                          <GuildEmblemIcon emblem={guilda.emblem as GuildEmblem} size={20} />
-                        </View>
-                      </LinearGradient>
-                    </View>
-                    <View style={styles.guildaListInfo}>
-                      <Text style={styles.guildaListName} numberOfLines={1}>{guilda.name}</Text>
-                      {guilda.description ? (
-                        <View style={styles.guildaMottoTag}>
-                          <Text style={styles.guildaMottoTagText} numberOfLines={1}>
-                            {guilda.description}
-                          </Text>
-                        </View>
-                      ) : null}
-                      <View style={styles.guildaListMetaRow}>
-                        <Text style={styles.guildaListMeta}>
-                          👥 {guilda.members.length}/{MAX_MEMBROS_GUILDA}
-                        </Text>
-                        <Text style={styles.guildaListMetaDot}>•</Text>
-                        <Text style={styles.guildaListXp}>{guilda.totalXp.toLocaleString("pt-BR")} XP</Text>
-                      </View>
-                    </View>
-                    <TouchableOpacity
-                      style={[
-                        styles.entrarButton,
-                        guilda.members.length >= MAX_MEMBROS_GUILDA && styles.entrarButtonCheia,
-                      ]}
-                      onPress={() => entrarMutation.mutate({ guildaId: guilda.id })}
-                      disabled={entrarMutation.isPending || guilda.members.length >= MAX_MEMBROS_GUILDA}
-                      activeOpacity={0.8}
-                    >
-                      {entrarMutation.isPending && entrarMutation.variables?.guildaId === guilda.id ? (
-                        <ActivityIndicator size="small" color={Colors.textOnPrimary} />
-                      ) : (
-                        <Text
-                          style={[
-                            styles.entrarText,
-                            guilda.members.length >= MAX_MEMBROS_GUILDA && styles.entrarTextCheia,
-                          ]}
-                        >
-                          {guilda.members.length >= MAX_MEMBROS_GUILDA ? "Cheia" : "Entrar"}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  </View>
+                  <GuildListCard
+                    key={guilda.id}
+                    guilda={guilda}
+                    action={{
+                      type: "entrar",
+                      onPress: () => entrarMutation.mutate({ guildaId: guilda.id }),
+                      pending: entrarMutation.isPending && entrarMutation.variables?.guildaId === guilda.id,
+                      cheia: guilda.members.length >= MAX_MEMBROS_GUILDA,
+                    }}
+                  />
                 ))}
               </View>
             )}
@@ -686,18 +557,6 @@ const styles = StyleSheet.create({
   roleTagTextLeader: {
     color: Colors.gold,
   },
-  voltarLink: {
-    flexDirection: "row",
-    alignItems: "center",
-    alignSelf: "flex-start",
-    gap: 6,
-    marginBottom: 16,
-  },
-  voltarLinkText: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
-  },
   explorarLink: {
     flexDirection: "row",
     alignItems: "center",
@@ -776,99 +635,6 @@ const styles = StyleSheet.create({
   },
   guildasList: {
     gap: 12,
-  },
-  guildaListCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    padding: 14,
-  },
-  guildaCrestSmall: {},
-  guildaCrestRing: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  guildaCrestInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: Colors.surfaceDark,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.background,
-  },
-  guildaListInfo: {
-    flex: 1,
-  },
-  guildaListName: {
-    color: Colors.textPrimary,
-    fontSize: 15,
-    fontWeight: "bold",
-  },
-  guildaMottoTag: {
-    alignSelf: "flex-start",
-    backgroundColor: Colors.primaryMuted,
-    borderRadius: 999,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginTop: 4,
-    maxWidth: "100%",
-  },
-  guildaMottoTagText: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    fontStyle: "italic",
-  },
-  guildaListMetaRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    marginTop: 6,
-  },
-  guildaListMeta: {
-    color: Colors.textMuted,
-    fontSize: 12,
-  },
-  guildaListMetaDot: {
-    color: Colors.textMuted,
-    fontSize: 12,
-  },
-  guildaListXp: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  entrarButton: {
-    backgroundColor: Colors.primary,
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.primaryDark,
-    minWidth: 76,
-    alignItems: "center",
-    justifyContent: "center",
-    minHeight: 34,
-  },
-  entrarButtonCheia: {
-    backgroundColor: Colors.surface,
-    borderColor: Colors.border,
-  },
-  entrarText: {
-    color: Colors.textOnPrimary,
-    fontSize: 12,
-    fontWeight: "bold",
-  },
-  entrarTextCheia: {
-    color: Colors.textMuted,
   },
   modalOverlay: {
     flex: 1,
