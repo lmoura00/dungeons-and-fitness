@@ -115,6 +115,13 @@ export default function LoginScreen() {
               style={styles.loginButton}
             />
 
+            <TouchableOpacity
+              style={styles.forgotPasswordButton}
+              onPress={() => router.push("/(auth)/forgot-password")}
+            >
+              <Text style={styles.forgotPasswordText}>Esqueceu a senha?</Text>
+            </TouchableOpacity>
+
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
               <Text style={styles.dividerText}>ou</Text>
@@ -231,6 +238,15 @@ const styles = StyleSheet.create({
     height: 44,
     marginTop: 8,
     marginBottom: 0,
+  },
+  forgotPasswordButton: {
+    alignItems: "center",
+    marginTop: 12,
+  },
+  forgotPasswordText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
   },
   createAccountButton: {
     height: 44,
