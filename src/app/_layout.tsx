@@ -46,9 +46,11 @@ function RootNavigator() {
 
   useEffect(() => {
     if (!isAuthenticated || !temPersonagem) return;
-    obterPushToken().then((pushToken) => {
-      if (pushToken) atualizarPushTokenMutation.mutate({ pushToken });
-    });
+    obterPushToken()
+      .then((pushToken) => {
+        if (pushToken) atualizarPushTokenMutation.mutate({ pushToken });
+      })
+      .catch((erro) => console.warn("Falha ao obter push token:", erro));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, temPersonagem]);
 

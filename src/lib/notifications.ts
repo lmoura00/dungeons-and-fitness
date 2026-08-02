@@ -34,8 +34,13 @@ export async function obterPushToken(): Promise<string | null> {
   }
 
   const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-  const { data } = await Notifications.getExpoPushTokenAsync(
-    projectId ? { projectId } : undefined
-  );
-  return data;
+  if (!projectId) return null;
+
+  try {
+    const { data } = await Notifications.getExpoPushTokenAsync({ projectId });
+    return data;
+  } catch (erro) {
+    console.warn("Falha ao obter push token:", erro);
+    return null;
+  }
 }
