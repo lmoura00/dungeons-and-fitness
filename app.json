@@ -2,6 +2,7 @@
   "expo": {
     "name": "dungeons-and-fitness",
     "slug": "dungeons-and-fitness",
+    "scheme": "dungeonsandfitness",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
