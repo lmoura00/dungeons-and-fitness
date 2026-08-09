@@ -13,12 +13,15 @@ function RootNavigator() {
   const segments = useSegments();
   const router = useRouter();
 
-  const { data: personagem, isLoading: loadingPersonagem, isError: semPersonagem } = trpc.personagens.meuPersonagem.useQuery(
+  const { data: personagem, isLoading: loadingPersonagem, error: erroPersonagem } = trpc.personagens.meuPersonagem.useQuery(
     undefined,
     { enabled: !!isAuthenticated, retry: false }
   );
 
-  const temPersonagem = !semPersonagem && !!personagem;
+  const temPersonagem = !!personagem;
+  // Só é "sem personagem" quando o backend confirma isso (404). Outros erros
+  // (rede fora do ar, 500, etc.) não devem ser tratados como onboarding pendente.
+  const semPersonagem = erroPersonagem?.data?.code === "NOT_FOUND";
 
   useEffect(() => {
     if (isLoadingSession) return;
@@ -37,9 +40,10 @@ function RootNavigator() {
 
     if (temPersonagem) {
       if (!inTabsGroup) router.replace("/(tabs)/dashboard");
-    } else if (!inOnboarding) {
+    } else if (semPersonagem && !inOnboarding) {
       router.replace("/(onboarding)/choose-race");
     }
+    // erro desconhecido (backend fora do ar, etc.): não força navegação
   }, [isAuthenticated, isLoadingSession, segments, personagem, loadingPersonagem, semPersonagem, temPersonagem]);
 
   const atualizarPushTokenMutation = trpc.usuarios.atualizarPushToken.useMutation();
