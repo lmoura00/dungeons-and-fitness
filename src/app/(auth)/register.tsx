@@ -97,7 +97,7 @@ export default function RegisterScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
       {feedback && (
         <View style={[styles.toast, feedback.type === "success" ? styles.toastSuccess : styles.toastError]}>

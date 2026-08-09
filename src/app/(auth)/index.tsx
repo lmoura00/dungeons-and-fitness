@@ -52,7 +52,7 @@ export default function LoginScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <ScrollView

@@ -105,7 +105,7 @@ export default function LogActivityScreen() {
 
       <KeyboardAvoidingView
         style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <ScrollView
