@@ -15,6 +15,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
@@ -25,9 +26,13 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const queryClient = useQueryClient();
 
   const loginMutation = trpc.auth.login.useMutation({
     async onSuccess({ token, usuarioId }) {
+      // Limpa dados em cache de uma sessão anterior (ex.: outra conta usada
+      // no mesmo dispositivo) antes de entrar com o novo usuário.
+      queryClient.clear();
       await salvarSessao(token, usuarioId);
     },
     onError(error) {

@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
 import { ScreenHeader } from "../../components/ScreenHeader";
@@ -37,6 +38,7 @@ const ATRIBUTOS = [
 
 export default function ProfileScreen() {
   const utils = trpc.useUtils();
+  const queryClient = useQueryClient();
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
   const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: conquistas } = trpc.conquistasUsuario.minhasConquistas.useQuery();
@@ -71,7 +73,7 @@ export default function ProfileScreen() {
   const handleSair = () => {
     Alert.alert("Sair", "Deseja encerrar sua sessão?", [
       { text: "Cancelar", style: "cancel" },
-      { text: "Sair", style: "destructive", onPress: async () => { await limparSessao(); router.replace("/(auth)"); } },
+      { text: "Sair", style: "destructive", onPress: async () => { await limparSessao(); queryClient.clear(); router.replace("/(auth)"); } },
     ]);
   };
 
