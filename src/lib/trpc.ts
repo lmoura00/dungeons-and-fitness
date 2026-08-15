@@ -7,6 +7,9 @@ import { obterToken } from "./auth";
 
 export const trpc = createTRPCReact<AppRouter>();
 
+// Build de demonstração offline (sem backend real) — ver src/lib/mock/.
+export const MOCK_ATIVO = process.env.EXPO_PUBLIC_MOCK === "true";
+
 function obterBaseUrl(): string {
   // Override explícito (ex.: API em produção ou túnel)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
@@ -22,6 +25,11 @@ function obterBaseUrl(): string {
 }
 
 export function criarTrpcClient() {
+  if (MOCK_ATIVO) {
+    const { criarMockLink } = require("./mock");
+    return trpc.createClient({ links: [criarMockLink()] });
+  }
+
   return trpc.createClient({
     links: [
       httpBatchLink({
