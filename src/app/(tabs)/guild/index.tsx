@@ -38,11 +38,23 @@ export default function GuildScreen() {
   const [emblema, setEmblema] = useState<GuildEmblem>("escudo");
   const [busca, setBusca] = useState("");
   const [confirmarSairVisible, setConfirmarSairVisible] = useState(false);
+  const [convidarModalVisible, setConvidarModalVisible] = useState(false);
+  const [buscaConvite, setBuscaConvite] = useState("");
 
   const { data: minhaGuilda, isLoading: loadingMinhaGuilda } = trpc.guildas.minhaGuilda.useQuery();
   const { data: guildas, isLoading: loadingGuildas } = trpc.guildas.listar.useQuery(undefined, {
     enabled: !loadingMinhaGuilda,
   });
+  const { data: meuPersonagem } = trpc.personagens.meuPersonagem.useQuery();
+  const { data: convites } = trpc.guildas.listarConvites.useQuery();
+
+  const souLider = !!minhaGuilda && !!meuPersonagem && minhaGuilda.leaderId === meuPersonagem.id;
+
+  const buscaConviteTrim = buscaConvite.trim();
+  const { data: resultadosBusca, isFetching: buscandoPersonagem } = trpc.guildas.buscarPersonagem.useQuery(
+    { nome: buscaConviteTrim },
+    { enabled: convidarModalVisible && buscaConviteTrim.length >= 2 }
+  );
 
   const guildLevel = minhaGuilda ? Math.floor(minhaGuilda.totalXp / GUILD_XP_POR_NIVEL) + 1 : 1;
   const guildXpAtual = minhaGuilda ? minhaGuilda.totalXp % GUILD_XP_POR_NIVEL : 0;
@@ -66,6 +78,14 @@ export default function GuildScreen() {
     utils.guildas.minhaGuilda.invalidate();
     utils.guildas.listar.invalidate();
   };
+
+  const convidarMutation = trpc.guildas.convidar.useMutation({
+    onSuccess: () => {
+      Alert.alert("Convite enviado!", "O personagem vai receber uma notificação.");
+      setBuscaConvite("");
+    },
+    onError: (e) => Alert.alert("Erro ao convidar", e.message),
+  });
 
   const criarMutation = trpc.guildas.criar.useMutation({
     onSuccess: () => {
@@ -125,6 +145,20 @@ export default function GuildScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        {convites && convites.length > 0 ? (
+          <TouchableOpacity
+            style={styles.convitesLink}
+            onPress={() => router.push("/(tabs)/guild/convites")}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="mail-unread-outline" size={16} color={Colors.textOnPrimary} />
+            <Text style={styles.convitesLinkText}>
+              Você tem {convites.length} convite{convites.length > 1 ? "s" : ""} de guilda
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textOnPrimary} />
+          </TouchableOpacity>
+        ) : null}
+
         {isLoading ? (
           <ActivityIndicator color={Colors.primary} style={{ marginTop: 60 }} />
         ) : minhaGuilda ? (
@@ -202,6 +236,17 @@ export default function GuildScreen() {
                   </View>
                 ))}
               </View>
+
+              {souLider && minhaGuilda.members.length < MAX_MEMBROS_GUILDA ? (
+                <TouchableOpacity
+                  style={styles.convidarButton}
+                  onPress={() => setConvidarModalVisible(true)}
+                  activeOpacity={0.8}
+                >
+                  <Ionicons name="person-add-outline" size={16} color={Colors.primary} />
+                  <Text style={styles.convidarButtonText}>Convidar Membro</Text>
+                </TouchableOpacity>
+              ) : null}
             </View>
 
             <TouchableOpacity
@@ -344,6 +389,82 @@ export default function GuildScreen() {
                   variant="outline"
                   onPress={() => setModalVisible(false)}
                   disabled={criarMutation.isPending}
+                />
+              </View>
+            </KeyboardAvoidingView>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      <Modal
+        visible={convidarModalVisible}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setConvidarModalVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.modalOverlay}>
+            <KeyboardAvoidingView
+              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              style={styles.modalKeyboardView}
+            >
+              <View style={styles.modalCard}>
+                <Text style={styles.modalTitle}>Convidar Membro</Text>
+
+                <CustomInput
+                  icon="search-outline"
+                  placeholder="Buscar personagem por nome..."
+                  value={buscaConvite}
+                  onChangeText={setBuscaConvite}
+                  containerStyle={styles.buscaInput}
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+
+                <ScrollView style={styles.convidarResultados}>
+                  {buscandoPersonagem ? (
+                    <ActivityIndicator color={Colors.primary} style={{ marginTop: 12 }} />
+                  ) : buscaConviteTrim.length < 2 ? (
+                    <Text style={styles.convidarHint}>Digite ao menos 2 letras para buscar.</Text>
+                  ) : !resultadosBusca || resultadosBusca.length === 0 ? (
+                    <Text style={styles.convidarHint}>Nenhum personagem encontrado.</Text>
+                  ) : (
+                    resultadosBusca.map((personagem) => (
+                      <View key={personagem.id} style={styles.convidarResultCard}>
+                        <Image
+                          source={getAvatar(personagem.class?.name, personagem.race?.name, undefined)}
+                          style={styles.memberAvatar}
+                        />
+                        <View style={styles.memberInfo}>
+                          <Text style={styles.memberName} numberOfLines={1}>{personagem.name}</Text>
+                          <Text style={styles.memberMeta} numberOfLines={1}>
+                            {personagem.class?.name ?? "Aventureiro"} • Nv. {personagem.level}
+                          </Text>
+                        </View>
+                        <TouchableOpacity
+                          style={styles.convidarResultButton}
+                          onPress={() => minhaGuilda && convidarMutation.mutate({ guildaId: minhaGuilda.id, personagemId: personagem.id })}
+                          disabled={convidarMutation.isPending}
+                          activeOpacity={0.8}
+                        >
+                          {convidarMutation.isPending && convidarMutation.variables?.personagemId === personagem.id ? (
+                            <ActivityIndicator size="small" color={Colors.textOnPrimary} />
+                          ) : (
+                            <Text style={styles.convidarResultButtonText}>Convidar</Text>
+                          )}
+                        </TouchableOpacity>
+                      </View>
+                    ))
+                  )}
+                </ScrollView>
+
+                <PrimaryButton
+                  title="Fechar"
+                  variant="outline"
+                  onPress={() => {
+                    setConvidarModalVisible(false);
+                    setBuscaConvite("");
+                  }}
                 />
               </View>
             </KeyboardAvoidingView>
@@ -556,6 +677,82 @@ const styles = StyleSheet.create({
   },
   roleTagTextLeader: {
     color: Colors.gold,
+  },
+  convitesLink: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    marginBottom: 16,
+  },
+  convitesLinkText: {
+    color: Colors.textOnPrimary,
+    fontSize: 13,
+    fontWeight: "600",
+    flexShrink: 1,
+  },
+  convidarButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    alignSelf: "center",
+  },
+  convidarButtonText: {
+    color: Colors.primary,
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  convidarResultados: {
+    maxHeight: 320,
+    marginBottom: 16,
+  },
+  convidarHint: {
+    color: Colors.textMuted,
+    fontSize: 13,
+    textAlign: "center",
+    paddingVertical: 20,
+  },
+  convidarResultCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    backgroundColor: Colors.surface,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  convidarResultButton: {
+    backgroundColor: Colors.primary,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primaryDark,
+    minWidth: 76,
+    minHeight: 34,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  convidarResultButtonText: {
+    color: Colors.textOnPrimary,
+    fontSize: 12,
+    fontWeight: "bold",
   },
   explorarLink: {
     flexDirection: "row",
