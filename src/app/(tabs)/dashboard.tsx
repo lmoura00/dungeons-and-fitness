@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
+  Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -13,8 +14,10 @@ import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
+import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
+import { requestHealthPermissions, syncTodayHealthData } from "../../lib/health";
 
 const XP_POR_NIVEL = 3000;
 
@@ -40,9 +43,44 @@ const ATRIBUTOS = [
 ] as const;
 
 export default function DashboardScreen() {
+  const utils = trpc.useUtils();
+  const [sincronizando, setSincronizando] = useState(false);
+
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
   const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: streak } = trpc.streak.atual.useQuery();
+  const { data: saudeHistorico } = trpc.saude.historico.useQuery({ dias: 1 });
+
+  const sincronizarMutation = trpc.saude.sincronizar.useMutation({
+    onSuccess: () => utils.saude.historico.invalidate(),
+    onError: (e) => Alert.alert("Erro ao sincronizar", e.message),
+  });
+
+  const handleSincronizarSaude = async () => {
+    setSincronizando(true);
+    try {
+      const permitido = await requestHealthPermissions();
+      if (!permitido) {
+        Alert.alert("Permissão necessária", "Autorize o acesso aos dados de saúde para sincronizar.");
+        return;
+      }
+      const dados = await syncTodayHealthData();
+      const hoje = new Date().toISOString().split("T")[0];
+      sincronizarMutation.mutate({
+        data: hoje,
+        passos: dados.steps,
+        distanciaKm: dados.distanceKm,
+        frequenciaCardiacaMedia: dados.avgHeartRateBpm,
+        fonte: dados.source,
+      });
+    } catch (e: any) {
+      Alert.alert("Erro ao ler dados de saúde", e?.message ?? "Tente novamente.");
+    } finally {
+      setSincronizando(false);
+    }
+  };
+
+  const saudeHoje = saudeHistorico?.[0];
 
   const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
   const xpNoNivel = personagem ? personagem.currentXp % XP_POR_NIVEL : 0;
@@ -218,6 +256,41 @@ export default function DashboardScreen() {
             </View>
           </>
         )}
+
+        {/* Saúde */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>SAÚDE</Text>
+        </View>
+        <View style={styles.healthCard}>
+          <View style={styles.healthStatsRow}>
+            <View style={styles.healthStat}>
+              <Ionicons name="footsteps" size={18} color={Colors.statAgility} />
+              <Text style={styles.healthStatValue}>{saudeHoje?.steps?.toLocaleString("pt-BR") ?? "—"}</Text>
+              <Text style={styles.healthStatLabel}>Passos</Text>
+            </View>
+            <View style={styles.healthStat}>
+              <Ionicons name="navigate" size={18} color={Colors.statFocus} />
+              <Text style={styles.healthStatValue}>
+                {saudeHoje?.distanceKm != null ? `${saudeHoje.distanceKm.toFixed(1)} km` : "—"}
+              </Text>
+              <Text style={styles.healthStatLabel}>Distância</Text>
+            </View>
+            <View style={styles.healthStat}>
+              <Ionicons name="heart" size={18} color={Colors.statVitality} />
+              <Text style={styles.healthStatValue}>
+                {saudeHoje?.avgHeartRateBpm != null ? `${saudeHoje.avgHeartRateBpm} bpm` : "—"}
+              </Text>
+              <Text style={styles.healthStatLabel}>FC Média</Text>
+            </View>
+          </View>
+          <PrimaryButton
+            title={sincronizando || sincronizarMutation.isPending ? "SINCRONIZANDO..." : "SINCRONIZAR SAÚDE"}
+            onPress={handleSincronizarSaude}
+            disabled={sincronizando || sincronizarMutation.isPending}
+            variant="outline"
+            style={styles.healthButton}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -570,5 +643,41 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     width: 32,
     textAlign: "right",
+  },
+
+  /* Saúde */
+  healthCard: {
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 24,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  healthStatsRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 8,
+  },
+  healthStat: {
+    flex: 1,
+    alignItems: "center",
+    gap: 4,
+  },
+  healthStatValue: {
+    color: Colors.textPrimary,
+    fontSize: 15,
+    fontWeight: "bold",
+  },
+  healthStatLabel: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: "600",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  healthButton: {
+    marginTop: 4,
+    height: 44,
   },
 });

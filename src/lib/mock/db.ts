@@ -131,6 +131,7 @@ interface MockGuild { id: string; name: string; description: string | null; embl
 interface MockGuildMember { id: string; guildId: string; characterId: string; role: "lider" | "membro" }
 interface MockGuildInvite { id: string; guildId: string; characterId: string; convidadoPorId: string; status: "pendente" | "aceito" | "recusado"; createdAt: Date }
 interface MockActivityLog { id: string; characterId: string; activityType: string; durationMinutes: number; distanceKm: number | null; intensity: string; xpEarned: number; loggedAt: Date }
+interface MockHealthMetric { id: string; characterId: string; date: string; steps: number; distanceKm: number | null; avgHeartRateBpm: number | null; source: "healthkit" | "health_connect"; syncedAt: Date }
 
 const state = {
   users: new Map<string, MockUser>(),
@@ -142,6 +143,7 @@ const state = {
   guildMembers: [] as MockGuildMember[],
   guildInvites: [] as MockGuildInvite[],
   activityLogs: [] as MockActivityLog[],
+  healthMetrics: [] as MockHealthMetric[],
 };
 
 function criarPersonagem(opts: {
@@ -432,6 +434,41 @@ export function registrarAtividade(userId: string, input: { tipoAtividade: strin
   const xp = processarGanhoXp(userId, calorias);
   registrarStreakDia(userId);
   return { atividade, xp };
+}
+
+// ─── saúde ──────────────────────────────────────────────────────────────────
+
+export function registrarSaude(userId: string, input: {
+  data: string; passos: number; distanciaKm?: number; frequenciaCardiacaMedia?: number;
+  fonte: "healthkit" | "health_connect";
+}) {
+  const p = requireCharacter(userId);
+  const existente = state.healthMetrics.find((m) => m.characterId === p.id && m.date === input.data);
+  if (existente) {
+    existente.steps = input.passos;
+    existente.distanceKm = input.distanciaKm ?? null;
+    existente.avgHeartRateBpm = input.frequenciaCardiacaMedia ?? null;
+    existente.source = input.fonte;
+    existente.syncedAt = new Date();
+    return existente;
+  }
+  const registro: MockHealthMetric = {
+    id: uid("health"), characterId: p.id, date: input.data, steps: input.passos,
+    distanceKm: input.distanciaKm ?? null, avgHeartRateBpm: input.frequenciaCardiacaMedia ?? null,
+    source: input.fonte, syncedAt: new Date(),
+  };
+  state.healthMetrics.push(registro);
+  return registro;
+}
+
+export function historicoSaude(userId: string, dias: number) {
+  const p = requireCharacter(userId);
+  const desde = new Date();
+  desde.setDate(desde.getDate() - dias);
+  const desdeStr = desde.toISOString().split("T")[0];
+  return state.healthMetrics
+    .filter((m) => m.characterId === p.id && m.date >= desdeStr)
+    .sort((a, b) => (a.date < b.date ? 1 : -1));
 }
 
 // ─── guildas ────────────────────────────────────────────────────────────────

@@ -57,6 +57,11 @@ export const mockRouter = t.router({
     registrar: privateInput.mutation(({ ctx, input }: any) => mock.registrarAtividade(ctx.usuarioId, input)),
   }),
 
+  saude: t.router({
+    sincronizar: privateInput.mutation(({ ctx, input }: any) => mock.registrarSaude(ctx.usuarioId, input)),
+    historico: privateInput.query(({ ctx, input }: any) => mock.historicoSaude(ctx.usuarioId, input?.dias ?? 7)),
+  }),
+
   conquistasUsuario: t.router({
     minhasConquistas: privateProcedure.query(({ ctx }) => mock.minhasConquistas(ctx.usuarioId)),
   }),

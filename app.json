@@ -30,7 +30,16 @@
     },
     "plugins": [
       "expo-router",
-      "expo-notifications"
+      "expo-notifications",
+      [
+        "react-native-health",
+        {
+          "healthSharePermission": "Usamos seus dados de saúde (passos, distância e frequência cardíaca) para exibir seu progresso no app.",
+          "healthUpdatePermission": "O app não grava dados no Apple Health, apenas lê seu progresso."
+        }
+      ],
+      "react-native-health-connect",
+      "./plugins/withHealthConnect.js"
     ]
   }
 }
