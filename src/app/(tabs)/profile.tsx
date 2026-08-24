@@ -40,7 +40,6 @@ export default function ProfileScreen() {
   const utils = trpc.useUtils();
   const queryClient = useQueryClient();
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
-  const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: conquistas } = trpc.conquistasUsuario.minhasConquistas.useQuery();
   const { data: todasClasses } = trpc.classes.listar.useQuery();
 
@@ -102,7 +101,7 @@ export default function ProfileScreen() {
         <View style={styles.avatarCard}>
           <View style={styles.avatarGlow}>
             <Image
-              source={getAvatar(personagem?.class?.name, personagem?.race?.name, usuario?.gender)}
+              source={getAvatar(personagem?.class?.name, personagem?.race?.name, personagem?.avatarGender)}
               style={styles.avatarImage}
               resizeMode="contain"
             />
@@ -164,7 +163,7 @@ export default function ProfileScreen() {
                     disabled={isLocked || isAtual}
                   >
                     <Image
-                      source={getAvatar(classe.name, personagem?.race?.name, usuario?.gender)}
+                      source={getAvatar(classe.name, personagem?.race?.name, personagem?.avatarGender)}
                       style={[styles.classeAvatar, isLocked && styles.classeAvatarLocked]}
                       resizeMode="contain"
                     />

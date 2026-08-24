@@ -217,7 +217,7 @@ export default function GuildScreen() {
                 {minhaGuilda.members.map((membro) => (
                   <View key={membro.id} style={styles.memberCard}>
                     <Image
-                      source={getAvatar(membro.character.class?.name, membro.character.race?.name, undefined)}
+                      source={getAvatar(membro.character.class?.name, membro.character.race?.name, membro.character.avatarGender)}
                       style={styles.memberAvatar}
                     />
                     <View style={styles.memberInfo}>
@@ -432,7 +432,7 @@ export default function GuildScreen() {
                     resultadosBusca.map((personagem) => (
                       <View key={personagem.id} style={styles.convidarResultCard}>
                         <Image
-                          source={getAvatar(personagem.class?.name, personagem.race?.name, undefined)}
+                          source={getAvatar(personagem.class?.name, personagem.race?.name, personagem.avatarGender)}
                           style={styles.memberAvatar}
                         />
                         <View style={styles.memberInfo}>

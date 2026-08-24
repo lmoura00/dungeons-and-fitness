@@ -46,7 +46,8 @@ export default function ConfirmationScreen() {
       Alert.alert("Erro", "Dados de classe não carregados. Tente novamente.");
       return;
     }
-    criarMutation.mutate({ nome: characterName, racaId: raceId, classeId: aprendiz.id });
+    const avatarGenero = avatarKey?.endsWith("_F") ? "feminino" : "masculino";
+    criarMutation.mutate({ nome: characterName, racaId: raceId, classeId: aprendiz.id, avatarGenero });
   };
 
   return (

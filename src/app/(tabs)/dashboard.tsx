@@ -89,7 +89,7 @@ export default function DashboardScreen() {
   const diasSequencia = streak?.diasSequencia ?? 0;
   const streakAtivo = diasSequencia > 0;
   const attrs = personagem?.attributes;
-  const avatarSource = getAvatar(personagem?.class?.name, personagem?.race?.name, usuario?.gender);
+  const avatarSource = getAvatar(personagem?.class?.name, personagem?.race?.name, personagem?.avatarGender);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
