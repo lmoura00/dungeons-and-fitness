@@ -70,7 +70,7 @@ export function GuildListCard({ guilda, action }: GuildListCardProps) {
             <ActivityIndicator size="small" color={Colors.textOnPrimary} />
           ) : (
             <Text style={[styles.actionText, action.cheia && styles.actionTextMuted]}>
-              {action.cheia ? "Cheia" : "Entrar"}
+              {action.cheia ? "Cheia" : "Pedir p/ entrar"}
             </Text>
           )}
         </View>

@@ -47,6 +47,7 @@ export default function GuildScreen() {
   });
   const { data: meuPersonagem } = trpc.personagens.meuPersonagem.useQuery();
   const { data: convites } = trpc.guildas.listarConvites.useQuery();
+  const { data: solicitacoes } = trpc.guildas.listarSolicitacoes.useQuery();
 
   const souLider = !!minhaGuilda && !!meuPersonagem && minhaGuilda.leaderId === meuPersonagem.id;
 
@@ -98,9 +99,9 @@ export default function GuildScreen() {
     onError: (e) => Alert.alert("Erro ao criar guilda", e.message),
   });
 
-  const entrarMutation = trpc.guildas.entrar.useMutation({
-    onSuccess: invalidarGuildas,
-    onError: (e) => Alert.alert("Erro ao entrar na guilda", e.message),
+  const solicitarEntradaMutation = trpc.guildas.solicitarEntrada.useMutation({
+    onSuccess: () => Alert.alert("Pedido enviado!", "O líder da guilda vai receber sua solicitação."),
+    onError: (e) => Alert.alert("Erro ao solicitar entrada", e.message),
   });
 
   const sairMutation = trpc.guildas.sair.useMutation({
@@ -154,6 +155,20 @@ export default function GuildScreen() {
             <Ionicons name="mail-unread-outline" size={16} color={Colors.textOnPrimary} />
             <Text style={styles.convitesLinkText}>
               Você tem {convites.length} convite{convites.length > 1 ? "s" : ""} de guilda
+            </Text>
+            <Ionicons name="chevron-forward" size={16} color={Colors.textOnPrimary} />
+          </TouchableOpacity>
+        ) : null}
+
+        {solicitacoes && solicitacoes.length > 0 ? (
+          <TouchableOpacity
+            style={styles.convitesLink}
+            onPress={() => router.push("/(tabs)/guild/solicitacoes")}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="person-add-outline" size={16} color={Colors.textOnPrimary} />
+            <Text style={styles.convitesLinkText}>
+              {solicitacoes.length} pedido{solicitacoes.length > 1 ? "s" : ""} para entrar na sua guilda
             </Text>
             <Ionicons name="chevron-forward" size={16} color={Colors.textOnPrimary} />
           </TouchableOpacity>
@@ -318,8 +333,8 @@ export default function GuildScreen() {
                     guilda={guilda}
                     action={{
                       type: "entrar",
-                      onPress: () => entrarMutation.mutate({ guildaId: guilda.id }),
-                      pending: entrarMutation.isPending && entrarMutation.variables?.guildaId === guilda.id,
+                      onPress: () => solicitarEntradaMutation.mutate({ guildaId: guilda.id }),
+                      pending: solicitarEntradaMutation.isPending && solicitarEntradaMutation.variables?.guildaId === guilda.id,
                       cheia: guilda.members.length >= MAX_MEMBROS_GUILDA,
                     }}
                   />
