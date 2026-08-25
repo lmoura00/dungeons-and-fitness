@@ -349,7 +349,7 @@ export default function GuildScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles.modalKeyboardView}
             >
               <View style={styles.modalCard}>
@@ -420,7 +420,7 @@ export default function GuildScreen() {
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
           <View style={styles.modalOverlay}>
             <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : undefined}
+              behavior={Platform.OS === "ios" ? "padding" : "height"}
               style={styles.modalKeyboardView}
             >
               <View style={styles.modalCard}>

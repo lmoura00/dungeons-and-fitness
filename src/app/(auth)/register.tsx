@@ -3,13 +3,11 @@ import {
   View,
   Text,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  ScrollView,
   TouchableOpacity,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
@@ -95,10 +93,6 @@ export default function RegisterScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView
-        style={styles.keyboardView}
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
       {feedback && (
         <View style={[styles.toast, feedback.type === "success" ? styles.toastSuccess : styles.toastError]}>
           <Ionicons
@@ -116,12 +110,15 @@ export default function RegisterScreen() {
       )}
 
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <ScrollView
+        <KeyboardAwareScrollView
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator
           indicatorStyle="white"
           persistentScrollbar
           keyboardShouldPersistTaps="handled"
+          enableOnAndroid
+          extraScrollHeight={24}
+          keyboardOpeningTime={0}
         >
           <View style={styles.headerRow}>
             <TouchableOpacity
@@ -262,7 +259,7 @@ export default function RegisterScreen() {
               style={styles.submitButton}
             />
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
       </TouchableWithoutFeedback>
 
       <LinearGradient
@@ -270,7 +267,6 @@ export default function RegisterScreen() {
         pointerEvents="none"
         style={styles.scrollFade}
       />
-      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -279,9 +275,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: Colors.background,
-  },
-  keyboardView: {
-    flex: 1,
   },
   scroll: {
     flexGrow: 1,
