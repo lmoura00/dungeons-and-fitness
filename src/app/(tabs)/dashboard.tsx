@@ -48,7 +48,7 @@ export default function DashboardScreen() {
 
   const { data: personagem, isLoading } = trpc.personagens.meuPersonagem.useQuery();
   const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
-  const { data: streak } = trpc.streak.atual.useQuery();
+  const { data: streak, isLoading: isLoadingStreak } = trpc.streak.atual.useQuery();
   const { data: saudeHistorico } = trpc.saude.historico.useQuery({ dias: 1 });
 
   const sincronizarMutation = trpc.saude.sincronizar.useMutation({
@@ -169,9 +169,13 @@ export default function DashboardScreen() {
         <View style={styles.streakRow}>
           <View style={[styles.streakCard, streakAtivo && styles.streakCardAtivo]}>
             <Ionicons name="flame" size={22} color={streakAtivo ? Colors.primary : Colors.textMuted} />
-            <Text style={[styles.streakValue, streakAtivo && styles.streakValueAtivo]}>
-              {diasSequencia}
-            </Text>
+            {isLoadingStreak ? (
+              <View style={styles.streakValueSkeleton} />
+            ) : (
+              <Text style={[styles.streakValue, streakAtivo && styles.streakValueAtivo]}>
+                {diasSequencia}
+              </Text>
+            )}
             <Text style={styles.streakLabel}>Streak</Text>
           </View>
           <View style={styles.streakCard}>
@@ -488,6 +492,12 @@ const styles = StyleSheet.create({
   },
   streakValueAtivo: {
     color: Colors.primary,
+  },
+  streakValueSkeleton: {
+    width: 24,
+    height: 18,
+    borderRadius: 4,
+    backgroundColor: Colors.surface,
   },
   streakLabel: {
     color: Colors.textMuted,
