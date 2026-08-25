@@ -50,6 +50,7 @@ export default function DashboardScreen() {
   const { data: usuario } = trpc.usuarios.meuPerfil.useQuery();
   const { data: streak, isLoading: isLoadingStreak } = trpc.streak.atual.useQuery();
   const { data: saudeHistorico } = trpc.saude.historico.useQuery({ dias: 1 });
+  const { data: naoLidas } = trpc.notificacoes.naoLidas.useQuery();
 
   const sincronizarMutation = trpc.saude.sincronizar.useMutation({
     onSuccess: () => utils.saude.historico.invalidate(),
@@ -111,8 +112,17 @@ export default function DashboardScreen() {
                 <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
               </View>
             </View>
-            <TouchableOpacity style={styles.bellButton}>
+            <TouchableOpacity
+              style={styles.bellButton}
+              onPress={() => router.push("/(tabs)/notifications")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
               <Ionicons name="notifications-outline" size={20} color={Colors.textSecondary} />
+              {!!naoLidas?.total && (
+                <View style={styles.bellBadge}>
+                  <Text style={styles.bellBadgeText}>{naoLidas.total > 9 ? "9+" : naoLidas.total}</Text>
+                </View>
+              )}
             </TouchableOpacity>
           </View>
           <View style={styles.headerBadges}>
@@ -382,6 +392,25 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
     justifyContent: "center",
     alignItems: "center",
+  },
+  bellBadge: {
+    position: "absolute",
+    top: -2,
+    right: -2,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: Colors.crimson,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.surface,
+  },
+  bellBadgeText: {
+    color: Colors.textPrimary,
+    fontSize: 9,
+    fontWeight: "bold",
   },
 
   /* Featured card */

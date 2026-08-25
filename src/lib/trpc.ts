@@ -2,13 +2,10 @@ import { createTRPCReact } from "@trpc/react-query";
 import { httpBatchLink } from "@trpc/client";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
-import type { AppRouter } from "../../../backend/src/trpc/router";
+import type { AppRouter } from "../../../back/src/trpc/router";
 import { obterToken } from "./auth";
 
 export const trpc = createTRPCReact<AppRouter>();
-
-// Build de demonstração offline (sem backend real) — ver src/lib/mock/.
-export const MOCK_ATIVO = process.env.EXPO_PUBLIC_MOCK === "true";
 
 function obterBaseUrl(): string {
   // Override explícito (ex.: API em produção ou túnel)
@@ -25,11 +22,6 @@ function obterBaseUrl(): string {
 }
 
 export function criarTrpcClient() {
-  if (MOCK_ATIVO) {
-    const { criarMockLink } = require("./mock");
-    return trpc.createClient({ links: [criarMockLink()] });
-  }
-
   return trpc.createClient({
     links: [
       httpBatchLink({

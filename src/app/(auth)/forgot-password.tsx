@@ -17,7 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
-import { trpc, MOCK_ATIVO } from "../../lib/trpc";
+import { trpc } from "../../lib/trpc";
 
 export default function ForgotPasswordScreen() {
   const [etapa, setEtapa] = useState<"email" | "redefinir">("email");
@@ -118,11 +118,6 @@ export default function ForgotPasswordScreen() {
                 </>
               ) : (
                 <>
-                  {MOCK_ATIVO && (
-                    <Text style={styles.mockCodeHint}>
-                      Build de demonstração: use o código 123456.
-                    </Text>
-                  )}
                   <Text style={styles.formLabel}>Código recebido</Text>
                   <CustomInput
                     icon="key-outline"
@@ -241,13 +236,6 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     marginBottom: 6,
     marginLeft: 4,
-  },
-  mockCodeHint: {
-    color: Colors.primary,
-    fontSize: 12,
-    fontWeight: "600",
-    textAlign: "center",
-    marginBottom: 12,
   },
   passwordWrap: {
     position: "relative",

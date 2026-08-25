@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
-import { trpc, MOCK_ATIVO } from "../../lib/trpc";
+import { trpc } from "../../lib/trpc";
 import { salvarSessao } from "../../lib/auth";
 
 export default function LoginScreen() {
@@ -139,16 +139,6 @@ export default function LoginScreen() {
               onPress={() => router.push("/(auth)/register")}
               style={styles.createAccountButton}
             />
-
-            {MOCK_ATIVO && (
-              <View style={styles.demoHint}>
-                <Text style={styles.demoHintText}>
-                  Build de demonstração (sem servidor). Entre com{" "}
-                  <Text style={styles.demoHintStrong}>demo@dungeons.app</Text> e qualquer senha
-                  para ver um personagem já pronto, ou crie uma conta nova.
-                </Text>
-              </View>
-            )}
           </View>
 
           <View style={styles.footer}>
@@ -266,24 +256,6 @@ const styles = StyleSheet.create({
   createAccountButton: {
     height: 44,
     marginVertical: 0,
-  },
-  demoHint: {
-    marginTop: 14,
-    padding: 10,
-    borderRadius: 8,
-    backgroundColor: Colors.primaryMuted,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  demoHintText: {
-    color: Colors.textSecondary,
-    fontSize: 11,
-    lineHeight: 16,
-    textAlign: "center",
-  },
-  demoHintStrong: {
-    color: Colors.primary,
-    fontWeight: "bold",
   },
   divider: {
     flexDirection: "row",
