@@ -33,6 +33,7 @@
       "expo-notifications",
       "react-native-health-connect",
       "./plugins/withHealthConnect.js",
+      "./plugins/withHealthKit.js",
       [
         "expo-build-properties",
         {

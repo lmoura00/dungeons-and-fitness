@@ -27,8 +27,16 @@ function inicioDoDiaISO(): string {
 
 // ─── iOS: HealthKit ─────────────────────────────────────────────────────────
 
+function carregarAppleHealthKit() {
+  try {
+    return require("react-native-health").default;
+  } catch {
+    throw new Error("Módulo nativo do HealthKit não está disponível neste build.");
+  }
+}
+
 function requestHealthKitPermissions(): Promise<boolean> {
-  const AppleHealthKit = require("react-native-health").default;
+  const AppleHealthKit = carregarAppleHealthKit();
   const permissions = {
     permissions: {
       read: [
@@ -45,7 +53,7 @@ function requestHealthKitPermissions(): Promise<boolean> {
 }
 
 function syncHealthKitToday(): Promise<SyncHealthResult> {
-  const AppleHealthKit = require("react-native-health").default;
+  const AppleHealthKit = carregarAppleHealthKit();
   const options = { startDate: inicioDoDiaISO(), endDate: new Date().toISOString() };
 
   const passos = new Promise<number>((resolve, reject) => {
