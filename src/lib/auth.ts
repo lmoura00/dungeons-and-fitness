@@ -2,6 +2,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const TOKEN_KEY = "@dungeons/token";
 const USER_ID_KEY = "@dungeons/usuarioId";
+const BOAS_VINDAS_KEY = "@dungeons/boasVindasVistas";
+
+export async function obterBoasVindasVista(): Promise<boolean> {
+  const valor = await AsyncStorage.getItem(BOAS_VINDAS_KEY);
+  return valor === "true";
+}
+
+export async function marcarBoasVindasVista(): Promise<void> {
+  await AsyncStorage.setItem(BOAS_VINDAS_KEY, "true");
+}
 
 let _novaContaPendente = false;
 

@@ -10,10 +10,15 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Colors } from "../../constants/Colors";
+import { marcarBoasVindasVista } from "../../lib/auth";
 
 export default function WelcomeScreen() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    marcarBoasVindasVista();
+  }, []);
 
   useEffect(() => {
     Animated.parallel([
