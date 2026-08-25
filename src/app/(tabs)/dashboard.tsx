@@ -192,6 +192,41 @@ export default function DashboardScreen() {
           </View>
         </View>
 
+        {/* Saúde */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>SAÚDE</Text>
+        </View>
+        <View style={styles.healthCard}>
+          <View style={styles.healthStatsRow}>
+            <View style={styles.healthStat}>
+              <Ionicons name="footsteps" size={18} color={Colors.statAgility} />
+              <Text style={styles.healthStatValue}>{saudeHoje?.steps?.toLocaleString("pt-BR") ?? "—"}</Text>
+              <Text style={styles.healthStatLabel}>Passos</Text>
+            </View>
+            <View style={styles.healthStat}>
+              <Ionicons name="navigate" size={18} color={Colors.statFocus} />
+              <Text style={styles.healthStatValue}>
+                {saudeHoje?.distanceKm != null ? `${saudeHoje.distanceKm.toFixed(1)} km` : "—"}
+              </Text>
+              <Text style={styles.healthStatLabel}>Distância</Text>
+            </View>
+            <View style={styles.healthStat}>
+              <Ionicons name="heart" size={18} color={Colors.statVitality} />
+              <Text style={styles.healthStatValue}>
+                {saudeHoje?.avgHeartRateBpm != null ? `${saudeHoje.avgHeartRateBpm} bpm` : "—"}
+              </Text>
+              <Text style={styles.healthStatLabel}>FC Média</Text>
+            </View>
+          </View>
+          <PrimaryButton
+            title={sincronizando || sincronizarMutation.isPending ? "SINCRONIZANDO..." : "SINCRONIZAR SAÚDE"}
+            onPress={handleSincronizarSaude}
+            disabled={sincronizando || sincronizarMutation.isPending}
+            variant="outline"
+            style={styles.healthButton}
+          />
+        </View>
+
         {/* Ação Principal */}
         <TouchableOpacity
           style={styles.ctaWrapper}
@@ -260,41 +295,6 @@ export default function DashboardScreen() {
             </View>
           </>
         )}
-
-        {/* Saúde */}
-        <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>SAÚDE</Text>
-        </View>
-        <View style={styles.healthCard}>
-          <View style={styles.healthStatsRow}>
-            <View style={styles.healthStat}>
-              <Ionicons name="footsteps" size={18} color={Colors.statAgility} />
-              <Text style={styles.healthStatValue}>{saudeHoje?.steps?.toLocaleString("pt-BR") ?? "—"}</Text>
-              <Text style={styles.healthStatLabel}>Passos</Text>
-            </View>
-            <View style={styles.healthStat}>
-              <Ionicons name="navigate" size={18} color={Colors.statFocus} />
-              <Text style={styles.healthStatValue}>
-                {saudeHoje?.distanceKm != null ? `${saudeHoje.distanceKm.toFixed(1)} km` : "—"}
-              </Text>
-              <Text style={styles.healthStatLabel}>Distância</Text>
-            </View>
-            <View style={styles.healthStat}>
-              <Ionicons name="heart" size={18} color={Colors.statVitality} />
-              <Text style={styles.healthStatValue}>
-                {saudeHoje?.avgHeartRateBpm != null ? `${saudeHoje.avgHeartRateBpm} bpm` : "—"}
-              </Text>
-              <Text style={styles.healthStatLabel}>FC Média</Text>
-            </View>
-          </View>
-          <PrimaryButton
-            title={sincronizando || sincronizarMutation.isPending ? "SINCRONIZANDO..." : "SINCRONIZAR SAÚDE"}
-            onPress={handleSincronizarSaude}
-            disabled={sincronizando || sincronizarMutation.isPending}
-            variant="outline"
-            style={styles.healthButton}
-          />
-        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -661,6 +661,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginHorizontal: 24,
+    marginBottom: 24,
     borderWidth: 1,
     borderColor: Colors.border,
   },
