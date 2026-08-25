@@ -13,12 +13,12 @@ import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import { Colors } from "../../constants/Colors";
-import { ProgressBar } from "../../components/ProgressBar";
-import { ScreenHeader } from "../../components/ScreenHeader";
-import { trpc } from "../../lib/trpc";
-import { limparSessao } from "../../lib/auth";
-import { getAvatar } from "../../utils/getAvatar";
+import { Colors } from "../../../constants/Colors";
+import { ProgressBar } from "../../../components/ProgressBar";
+import { ScreenHeader } from "../../../components/ScreenHeader";
+import { trpc } from "../../../lib/trpc";
+import { limparSessao } from "../../../lib/auth";
+import { getAvatar } from "../../../utils/getAvatar";
 
 const XP_POR_NIVEL = 3000;
 
@@ -89,10 +89,19 @@ export default function ProfileScreen() {
         title="Ficha"
         style={styles.header}
         rightSlot={
-          <TouchableOpacity style={styles.sairButton} onPress={handleSair}>
-            <Ionicons name="log-out-outline" size={18} color={Colors.textMuted} />
-            <Text style={styles.sairText}>Sair</Text>
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => router.push("/(tabs)/profile/settings")}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="settings-outline" size={18} color={Colors.textMuted} />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.sairButton} onPress={handleSair}>
+              <Ionicons name="log-out-outline" size={18} color={Colors.textMuted} />
+              <Text style={styles.sairText}>Sair</Text>
+            </TouchableOpacity>
+          </View>
         }
       />
 
@@ -256,6 +265,21 @@ const styles = StyleSheet.create({
   header: {
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+  },
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  iconButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    justifyContent: "center",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceDark,
   },
   sairButton: {
     flexDirection: "row",

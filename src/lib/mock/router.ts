@@ -31,6 +31,7 @@ export const mockRouter = t.router({
   usuarios: t.router({
     meuPerfil: privateProcedure.query(({ ctx }) => mock.meuPerfil(ctx.usuarioId)),
     atualizarPushToken: privateInput.mutation(({ ctx, input }: any) => mock.atualizarPushToken(ctx.usuarioId, input?.pushToken ?? null)),
+    editar: privateInput.mutation(({ ctx, input }: any) => mock.editarPerfil(ctx.usuarioId, input)),
   }),
 
   personagens: t.router({

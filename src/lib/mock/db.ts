@@ -298,6 +298,23 @@ export function atualizarPushToken(userId: string, pushToken: string | null) {
   if (u) u.pushToken = pushToken;
   return { sucesso: true };
 }
+export function editarPerfil(userId: string, input: {
+  nomeCompleto?: string; nomeUsuario?: string; dataNascimento?: string;
+  genero?: string; objetivoFitness?: string; nivelAtividade?: string;
+  pesoKg?: number; alturaCm?: number;
+}) {
+  const u = state.users.get(userId);
+  if (!u) throw Erros.naoEncontrado("Usuário");
+  if (input.nomeCompleto !== undefined) u.fullName = input.nomeCompleto;
+  if (input.nomeUsuario !== undefined) u.username = input.nomeUsuario;
+  if (input.dataNascimento !== undefined) u.birthDate = input.dataNascimento;
+  if (input.genero !== undefined) u.gender = input.genero;
+  if (input.objetivoFitness !== undefined) u.fitnessGoal = input.objetivoFitness;
+  if (input.nivelAtividade !== undefined) u.activityLevel = input.nivelAtividade;
+  if (input.pesoKg !== undefined) u.weightKg = input.pesoKg;
+  if (input.alturaCm !== undefined) u.heightCm = input.alturaCm;
+  return u;
+}
 
 // ─── personagens ────────────────────────────────────────────────────────────
 
