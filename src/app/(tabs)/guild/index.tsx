@@ -38,7 +38,9 @@ export default function GuildScreen() {
   const [emblema, setEmblema] = useState<GuildEmblem>("escudo");
   const [busca, setBusca] = useState("");
   const [confirmarSairVisible, setConfirmarSairVisible] = useState(false);
+  const [confirmarExcluirVisible, setConfirmarExcluirVisible] = useState(false);
   const [convidarModalVisible, setConvidarModalVisible] = useState(false);
+  const [menuVisible, setMenuVisible] = useState(false);
   const [buscaConvite, setBuscaConvite] = useState("");
 
   const { data: minhaGuilda, isLoading: loadingMinhaGuilda } = trpc.guildas.minhaGuilda.useQuery();
@@ -109,6 +111,11 @@ export default function GuildScreen() {
     onError: (e) => Alert.alert("Erro ao sair da guilda", e.message),
   });
 
+  const excluirMutation = trpc.guildas.excluir.useMutation({
+    onSuccess: invalidarGuildas,
+    onError: (e) => Alert.alert("Erro ao excluir guilda", e.message),
+  });
+
   const handleCriar = () => {
     if (nome.trim().length < 3) {
       Alert.alert("Atenção", "O nome da guilda precisa ter pelo menos 3 caracteres.");
@@ -128,6 +135,17 @@ export default function GuildScreen() {
     sairMutation.mutate({ guildaId: minhaGuilda.id });
   };
 
+  const handleExcluir = () => {
+    if (!minhaGuilda) return;
+    setConfirmarExcluirVisible(true);
+  };
+
+  const confirmarExcluir = () => {
+    if (!minhaGuilda) return;
+    setConfirmarExcluirVisible(false);
+    excluirMutation.mutate({ guildaId: minhaGuilda.id });
+  };
+
   const isLoading = loadingMinhaGuilda || (!minhaGuilda && loadingGuildas);
 
   return (
@@ -141,7 +159,18 @@ export default function GuildScreen() {
 
       <ScreenHeader
         title="Guilda"
-        subtitle={minhaGuilda ? minhaGuilda.name : "Junte-se a uma guilda ou funde a sua"}
+        subtitle={minhaGuilda ? undefined : "Junte-se a uma guilda ou funde a sua"}
+        rightSlot={
+          minhaGuilda ? (
+            <TouchableOpacity
+              style={styles.menuButton}
+              onPress={() => setMenuVisible(true)}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <Ionicons name="ellipsis-vertical" size={20} color={Colors.textSecondary} />
+            </TouchableOpacity>
+          ) : undefined
+        }
         style={styles.header}
       />
 
@@ -227,7 +256,18 @@ export default function GuildScreen() {
               </View>
 
               {/* Roster de membros */}
-              <Text style={styles.sectionLabel}>Membros ({minhaGuilda.members.length})</Text>
+              <View style={styles.sectionHeaderRow}>
+                <Text style={styles.sectionLabel}>Membros ({minhaGuilda.members.length})</Text>
+                {souLider && minhaGuilda.members.length < MAX_MEMBROS_GUILDA ? (
+                  <TouchableOpacity
+                    onPress={() => setConvidarModalVisible(true)}
+                    activeOpacity={0.7}
+                    hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                  >
+                    <Text style={styles.inviteChipText}>+ Convidar</Text>
+                  </TouchableOpacity>
+                ) : null}
+              </View>
               <View style={styles.membersList}>
                 {minhaGuilda.members.map((membro) => (
                   <View key={membro.id} style={styles.memberCard}>
@@ -251,39 +291,15 @@ export default function GuildScreen() {
                   </View>
                 ))}
               </View>
-
-              {souLider && minhaGuilda.members.length < MAX_MEMBROS_GUILDA ? (
-                <TouchableOpacity
-                  style={styles.convidarButton}
-                  onPress={() => setConvidarModalVisible(true)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons name="person-add-outline" size={16} color={Colors.primary} />
-                  <Text style={styles.convidarButtonText}>Convidar Membro</Text>
-                </TouchableOpacity>
-              ) : null}
             </View>
 
             <TouchableOpacity
-              style={styles.explorarLink}
-              onPress={() => router.push("/(tabs)/guild/explorar")}
-              activeOpacity={0.7}
+              style={styles.chatButton}
+              onPress={() => router.push("/(tabs)/guild/chat")}
+              activeOpacity={0.85}
             >
-              <Ionicons name="compass-outline" size={16} color={Colors.primary} />
-              <Text style={styles.explorarLinkText}>Ver outras guildas</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.sairButton}
-              onPress={handleSair}
-              disabled={sairMutation.isPending}
-              activeOpacity={0.7}
-            >
-              {sairMutation.isPending ? (
-                <ActivityIndicator size="small" color={Colors.textMuted} />
-              ) : (
-                <Text style={styles.sairButtonText}>Sair da Guilda</Text>
-              )}
+              <Ionicons name="chatbubbles-outline" size={18} color={Colors.textOnPrimary} />
+              <Text style={styles.chatButtonText}>Chat da Guilda</Text>
             </TouchableOpacity>
           </>
         ) : (
@@ -487,6 +503,61 @@ export default function GuildScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
+      <Modal
+        visible={menuVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setMenuVisible(false)}
+      >
+        <TouchableWithoutFeedback onPress={() => setMenuVisible(false)}>
+          <View style={styles.menuOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.menuCard}>
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    router.push("/(tabs)/guild/explorar");
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="compass-outline" size={18} color={Colors.textPrimary} />
+                  <Text style={styles.menuItemText}>Ver outras guildas</Text>
+                </TouchableOpacity>
+                <View style={styles.menuDivider} />
+                <TouchableOpacity
+                  style={styles.menuItem}
+                  onPress={() => {
+                    setMenuVisible(false);
+                    handleSair();
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Ionicons name="exit-outline" size={18} color={Colors.crimson} />
+                  <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Sair da Guilda</Text>
+                </TouchableOpacity>
+                {souLider ? (
+                  <>
+                    <View style={styles.menuDivider} />
+                    <TouchableOpacity
+                      style={styles.menuItem}
+                      onPress={() => {
+                        setMenuVisible(false);
+                        handleExcluir();
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Ionicons name="trash-outline" size={18} color={Colors.crimson} />
+                      <Text style={[styles.menuItemText, styles.menuItemTextDanger]}>Excluir Guilda</Text>
+                    </TouchableOpacity>
+                  </>
+                ) : null}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
       <Modal visible={confirmarSairVisible} animationType="fade" transparent>
         <View style={styles.confirmOverlay}>
           <View style={styles.confirmCard}>
@@ -512,6 +583,38 @@ export default function GuildScreen() {
                   <ActivityIndicator size="small" color={Colors.textOnPrimary} />
                 ) : (
                   <Text style={styles.confirmSairText}>Sair</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={confirmarExcluirVisible} animationType="fade" transparent>
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmCard}>
+            <Text style={styles.confirmTitle}>Excluir Guilda</Text>
+            <Text style={styles.confirmMessage}>
+              Tem certeza que deseja excluir "{minhaGuilda?.name}"? Essa ação é permanente e removerá todos os membros, convites e mensagens da guilda.
+            </Text>
+            <View style={styles.confirmActions}>
+              <TouchableOpacity
+                style={styles.confirmCancelButton}
+                onPress={() => setConfirmarExcluirVisible(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.confirmCancelText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmSairButton}
+                onPress={confirmarExcluir}
+                disabled={excluirMutation.isPending}
+                activeOpacity={0.8}
+              >
+                {excluirMutation.isPending ? (
+                  <ActivityIndicator size="small" color={Colors.textOnPrimary} />
+                ) : (
+                  <Text style={styles.confirmSairText}>Excluir</Text>
                 )}
               </TouchableOpacity>
             </View>
@@ -629,13 +732,30 @@ const styles = StyleSheet.create({
     color: Colors.textMuted,
     fontSize: 12,
   },
+  sectionHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: "100%",
+    marginTop: 20,
+    marginBottom: 8,
+  },
   sectionLabel: {
     color: Colors.textSecondary,
     fontSize: 13,
     fontWeight: "600",
-    alignSelf: "flex-start",
-    marginTop: 20,
-    marginBottom: 8,
+  },
+  inviteChipText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "700",
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    backgroundColor: "rgba(255, 178, 63, 0.12)",
+    overflow: "hidden",
   },
   membersList: {
     width: "100%",
@@ -712,23 +832,23 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     flexShrink: 1,
   },
-  convidarButton: {
+  chatButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 16,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    gap: 8,
+    marginTop: 20,
+    marginBottom: 12,
+    paddingVertical: 15,
+    borderRadius: 10,
+    backgroundColor: Colors.primary,
     borderWidth: 1,
-    borderColor: Colors.primary,
-    alignSelf: "center",
+    borderColor: Colors.primaryDark,
   },
-  convidarButtonText: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
+  chatButtonText: {
+    color: Colors.textOnPrimary,
+    fontSize: 15,
+    fontWeight: "bold",
   },
   convidarResultados: {
     maxHeight: 320,
@@ -769,33 +889,47 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "bold",
   },
-  explorarLink: {
-    flexDirection: "row",
+  menuButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
-    marginTop: 20,
   },
-  explorarLinkText: {
-    color: Colors.primary,
-    fontSize: 13,
-    fontWeight: "600",
+  menuOverlay: {
+    flex: 1,
+    alignItems: "flex-end",
+    paddingTop: 56,
+    paddingRight: 16,
   },
-  sairButton: {
-    marginTop: 24,
-    alignSelf: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+  menuCard: {
+    minWidth: 200,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: Colors.textMuted,
-    minWidth: 150,
-    alignItems: "center",
+    borderColor: Colors.border,
+    paddingVertical: 6,
+    overflow: "hidden",
   },
-  sairButtonText: {
-    color: Colors.textMuted,
-    fontSize: 12,
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+  },
+  menuItemText: {
+    color: Colors.textPrimary,
+    fontSize: 14,
     fontWeight: "600",
+  },
+  menuItemTextDanger: {
+    color: Colors.crimson,
+  },
+  menuDivider: {
+    height: 1,
+    backgroundColor: Colors.border,
+    marginHorizontal: 12,
   },
   criarButton: {
     flexDirection: "row",

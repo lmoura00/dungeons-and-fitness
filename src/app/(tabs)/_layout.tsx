@@ -2,6 +2,7 @@ import React from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Tabs } from "expo-router";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { getFocusedRouteNameFromRoute } from "@react-navigation/native";
 import { Ionicons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Colors, radii } from "../../constants/Colors";
@@ -24,6 +25,12 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPadding = (insets.bottom > 0 ? insets.bottom : 8) + TAB_BAR_BOTTOM_SPACING;
 
+  // Chat da guilda ocupa o espaço até embaixo — o FAB flutuante do meio
+  // atrapalha o input nessa tela, então some com ele só ali.
+  const guildRoute = state.routes.find((r) => r.name === "guild");
+  const guildFocusedRoute = guildRoute ? getFocusedRouteNameFromRoute(guildRoute) : undefined;
+  const esconderRegistrar = state.routes[state.index]?.name === "guild" && guildFocusedRoute === "chat";
+
   return (
     <View
       style={[
@@ -37,6 +44,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
         const isFocused = state.index === index;
         const isRegister = route.name === REGISTER_ROUTE;
+        if (isRegister && esconderRegistrar) return null;
 
         const onPress = () => {
           const event = navigation.emit({ type: "tabPress", target: route.key, canPreventDefault: true });

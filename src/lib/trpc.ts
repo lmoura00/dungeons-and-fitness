@@ -1,5 +1,6 @@
 import { createTRPCReact } from "@trpc/react-query";
-import { httpBatchLink } from "@trpc/client";
+import { httpBatchLink, httpSubscriptionLink, splitLink } from "@trpc/client";
+import RNEventSource from "react-native-sse";
 import Constants from "expo-constants";
 import { Platform } from "react-native";
 import type { AppRouter } from "../../../back/src/trpc/router";
@@ -7,7 +8,7 @@ import { obterToken } from "./auth";
 
 export const trpc = createTRPCReact<AppRouter>();
 
-function obterBaseUrl(): string {
+export function obterBaseUrl(): string {
   // Override explícito (ex.: API em produção ou túnel)
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
 
@@ -24,12 +25,23 @@ function obterBaseUrl(): string {
 export function criarTrpcClient() {
   return trpc.createClient({
     links: [
-      httpBatchLink({
-        url: `${obterBaseUrl()}/trpc`,
-        headers() {
-          const token = obterToken();
-          return token ? { Authorization: `Bearer ${token}` } : {};
-        },
+      splitLink({
+        condition: (op) => op.type === "subscription",
+        true: httpSubscriptionLink({
+          url: `${obterBaseUrl()}/trpc`,
+          EventSource: RNEventSource as unknown as typeof EventSource,
+          eventSourceOptions() {
+            const token = obterToken();
+            return { headers: token ? { Authorization: `Bearer ${token}` } : {} } as EventSourceInit;
+          },
+        }),
+        false: httpBatchLink({
+          url: `${obterBaseUrl()}/trpc`,
+          headers() {
+            const token = obterToken();
+            return token ? { Authorization: `Bearer ${token}` } : {};
+          },
+        }),
       }),
     ],
   });
