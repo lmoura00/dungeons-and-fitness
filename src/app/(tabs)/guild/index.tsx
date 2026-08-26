@@ -558,70 +558,76 @@ export default function GuildScreen() {
         </TouchableWithoutFeedback>
       </Modal>
 
-      <Modal visible={confirmarSairVisible} animationType="fade" transparent>
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Sair da Guilda</Text>
-            <Text style={styles.confirmMessage}>
-              Tem certeza que deseja sair de "{minhaGuilda?.name}"?
-            </Text>
-            <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={styles.confirmCancelButton}
-                onPress={() => setConfirmarSairVisible(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.confirmCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmSairButton}
-                onPress={confirmarSair}
-                disabled={sairMutation.isPending}
-                activeOpacity={0.8}
-              >
-                {sairMutation.isPending ? (
-                  <ActivityIndicator size="small" color={Colors.textOnPrimary} />
-                ) : (
-                  <Text style={styles.confirmSairText}>Sair</Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      <ConfirmModal
+        visible={confirmarSairVisible}
+        title="Sair da Guilda"
+        message={`Tem certeza que deseja sair de "${minhaGuilda?.name}"?`}
+        confirmLabel="Sair"
+        loading={sairMutation.isPending}
+        onCancel={() => setConfirmarSairVisible(false)}
+        onConfirm={confirmarSair}
+      />
 
-      <Modal visible={confirmarExcluirVisible} animationType="fade" transparent>
-        <View style={styles.confirmOverlay}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>Excluir Guilda</Text>
-            <Text style={styles.confirmMessage}>
-              Tem certeza que deseja excluir "{minhaGuilda?.name}"? Essa ação é permanente e removerá todos os membros, convites e mensagens da guilda.
-            </Text>
-            <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={styles.confirmCancelButton}
-                onPress={() => setConfirmarExcluirVisible(false)}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.confirmCancelText}>Cancelar</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.confirmSairButton}
-                onPress={confirmarExcluir}
-                disabled={excluirMutation.isPending}
-                activeOpacity={0.8}
-              >
-                {excluirMutation.isPending ? (
-                  <ActivityIndicator size="small" color={Colors.textOnPrimary} />
-                ) : (
-                  <Text style={styles.confirmSairText}>Excluir</Text>
-                )}
-              </TouchableOpacity>
-            </View>
+      <ConfirmModal
+        visible={confirmarExcluirVisible}
+        title="Excluir Guilda"
+        message={`Tem certeza que deseja excluir "${minhaGuilda?.name}"? Essa ação é permanente e removerá todos os membros, convites e mensagens da guilda.`}
+        confirmLabel="Excluir"
+        loading={excluirMutation.isPending}
+        onCancel={() => setConfirmarExcluirVisible(false)}
+        onConfirm={confirmarExcluir}
+      />
+    </SafeAreaView>
+  );
+}
+
+function ConfirmModal({
+  visible,
+  title,
+  message,
+  confirmLabel,
+  loading,
+  onCancel,
+  onConfirm,
+}: {
+  visible: boolean;
+  title: string;
+  message: string;
+  confirmLabel: string;
+  loading: boolean;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  return (
+    <Modal visible={visible} animationType="fade" transparent>
+      <View style={styles.confirmOverlay}>
+        <View style={styles.confirmCard}>
+          <Text style={styles.confirmTitle}>{title}</Text>
+          <Text style={styles.confirmMessage}>{message}</Text>
+          <View style={styles.confirmActions}>
+            <TouchableOpacity
+              style={styles.confirmCancelButton}
+              onPress={onCancel}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.confirmCancelText}>Cancelar</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.confirmSairButton}
+              onPress={onConfirm}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={Colors.textOnPrimary} />
+              ) : (
+                <Text style={styles.confirmSairText}>{confirmLabel}</Text>
+              )}
+            </TouchableOpacity>
           </View>
         </View>
-      </Modal>
-    </SafeAreaView>
+      </View>
+    </Modal>
   );
 }
 

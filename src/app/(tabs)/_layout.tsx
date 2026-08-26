@@ -13,6 +13,12 @@ const TAB_BAR_HEIGHT = 56;
 const TAB_BAR_BOTTOM_SPACING = 8;
 const REGISTER_ROUTE = "log-activity";
 
+// Telas que ocupam o espaço até embaixo (input fixo etc.) e por isso escondem
+// o FAB central — adicionar uma tela nova aqui em vez de repetir a checagem.
+const ESCONDE_FAB_EM: { tab: string; subRota: string }[] = [
+  { tab: "guild", subRota: "chat" },
+];
+
 const TAB_ITEMS: { name: string; label: string; icon: IoniconName; iconActive: IoniconName }[] = [
   { name: "dashboard",      label: "Home",      icon: "home-outline",   iconActive: "home" },
   { name: "quests",         label: "Missões",   icon: "shield-outline", iconActive: "shield" },
@@ -25,11 +31,11 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
   const bottomPadding = (insets.bottom > 0 ? insets.bottom : 8) + TAB_BAR_BOTTOM_SPACING;
 
-  // Chat da guilda ocupa o espaço até embaixo — o FAB flutuante do meio
-  // atrapalha o input nessa tela, então some com ele só ali.
-  const guildRoute = state.routes.find((r) => r.name === "guild");
-  const guildFocusedRoute = guildRoute ? getFocusedRouteNameFromRoute(guildRoute) : undefined;
-  const esconderRegistrar = state.routes[state.index]?.name === "guild" && guildFocusedRoute === "chat";
+  const rotaAtiva = state.routes[state.index];
+  const subRotaAtiva = rotaAtiva ? getFocusedRouteNameFromRoute(rotaAtiva) : undefined;
+  const esconderRegistrar = ESCONDE_FAB_EM.some(
+    (r) => r.tab === rotaAtiva?.name && r.subRota === subRotaAtiva
+  );
 
   return (
     <View

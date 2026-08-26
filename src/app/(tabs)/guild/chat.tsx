@@ -41,7 +41,7 @@ function formatarHora(iso: string) {
 }
 
 export default function GuildChatScreen() {
-  const { data: minhaGuilda } = trpc.guildas.minhaGuilda.useQuery();
+  const { data: minhaGuilda, isLoading: carregandoGuilda } = trpc.guildas.minhaGuilda.useQuery();
   const { data: meuPersonagem } = trpc.personagens.meuPersonagem.useQuery();
 
   const guildId = minhaGuilda?.id;
@@ -51,6 +51,7 @@ export default function GuildChatScreen() {
   const [carregandoMais, setCarregandoMais] = useState(false);
   const [temMais, setTemMais] = useState(true);
   const seenIds = useRef(new Set<string>());
+  const historicoCarregado = useRef(false);
   const utils = trpc.useUtils();
 
   const adicionarMensagens = useCallback((novas: Mensagem[], noInicio: boolean) => {
@@ -74,8 +75,19 @@ export default function GuildChatScreen() {
     { enabled: !!guildId }
   );
 
+  // Reseta o flag de "já carreguei o histórico" quando troca de guilda —
+  // sem isso, trocar de guilda dentro da mesma instância da tela nunca
+  // recarregaria o histórico da nova guilda.
   React.useEffect(() => {
-    if (historicoInicial && mensagens.length === 0) {
+    historicoCarregado.current = false;
+  }, [guildId]);
+
+  React.useEffect(() => {
+    // Flag separada de mensagens.length: a subscription pode entregar uma
+    // mensagem ao vivo antes do histórico resolver, e nesse caso
+    // mensagens.length já não é 0 quando historicoInicial chega.
+    if (historicoInicial && !historicoCarregado.current) {
+      historicoCarregado.current = true;
       adicionarMensagens(historicoInicial, false);
       setTemMais(historicoInicial.length >= 30);
     }
@@ -95,7 +107,7 @@ export default function GuildChatScreen() {
     // pra quem mandou ver a própria mensagem (a live feed serve pra ecoar
     // pros outros membros; se ela atrasar/falhar, o remetente já viu a sua).
     onSuccess: (mensagem) => adicionarMensagens([mensagem as Mensagem], false),
-    onError: (e) => Alert.alert("Erro ao enviar mensagem", `${e.message}\n\nURL: ${obterBaseUrl()}`),
+    onError: (e) => Alert.alert("Erro ao enviar mensagem", __DEV__ ? `${e.message}\n\nURL: ${obterBaseUrl()}` : e.message),
   });
 
   const handleEnviar = () => {
@@ -123,6 +135,17 @@ export default function GuildChatScreen() {
 
   const dataInvertida = useMemo(() => [...mensagens].reverse(), [mensagens]);
 
+  if (carregandoGuilda) {
+    return (
+      <SafeAreaView style={styles.container} edges={["top"]}>
+        <ScreenHeader title="Chat da Guilda" showBackButton />
+        <View style={styles.emptyState}>
+          <ActivityIndicator color={Colors.primary} />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (!minhaGuilda) {
     return (
       <SafeAreaView style={styles.container} edges={["top"]}>
@@ -143,7 +166,7 @@ export default function GuildChatScreen() {
         keyboardVerticalOffset={0}
       >
         <ScreenHeader title={minhaGuilda.name} subtitle="Chat da guilda" showBackButton />
-        <Text style={styles.debugUrl}>API: {obterBaseUrl()}</Text>
+        {__DEV__ && <Text style={styles.debugUrl}>API: {obterBaseUrl()}</Text>}
 
         {dataInvertida.length === 0 ? (
           <View style={styles.emptyState}>
