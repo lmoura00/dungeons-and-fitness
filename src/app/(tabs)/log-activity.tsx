@@ -9,7 +9,6 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Modal,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,8 +18,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
-import { ProgressBar } from "../../components/ProgressBar";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { RewardModal } from "../../components/RewardModal";
 import { trpc } from "../../lib/trpc";
 
 type TipoAtividade = "corrida" | "forca" | "ciclismo" | "natacao" | "yoga" | "esporte" | "outro";
@@ -41,8 +40,6 @@ const INTENSIDADES: { value: Intensidade; label: string }[] = [
   { value: "moderado", label: "Moderado" },
   { value: "intenso",  label: "Intenso"  },
 ];
-
-const XP_POR_NIVEL = 3000;
 
 export default function LogActivityScreen() {
   const utils = trpc.useUtils();
@@ -90,8 +87,6 @@ export default function LogActivityScreen() {
   };
 
   const tipoSelecionado = TIPOS.find((t) => t.value === tipoAtividade);
-  const xpNoNivel = resultado ? resultado.xpDepois % XP_POR_NIVEL : 0;
-  const progresso = xpNoNivel / XP_POR_NIVEL;
   const podeSalvar = !!tipoAtividade && !!minutes.trim() && !!intensidade;
 
   return (
@@ -193,42 +188,14 @@ export default function LogActivityScreen() {
         </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
 
-      <Modal visible={showReward} animationType="slide" transparent={false}>
-        <SafeAreaView style={styles.modalContainer}>
-          <View style={styles.rewardContent}>
-            <View style={styles.glowCircle}>
-              <Ionicons name="trophy" size={50} color={Colors.gold} />
-            </View>
-
-            <Text style={styles.rewardTitle}>Missão Concluída!</Text>
-            <Text style={styles.rewardSubtitle}>
-              {tipoSelecionado?.label ?? "Atividade"} • {minutes} min
-            </Text>
-
-            <View style={styles.xpCard}>
-              <Text style={styles.xpValue}>+{resultado?.xpGanho ?? 0} XP</Text>
-              <Text style={styles.xpLabel}>Experiência Adquirida</Text>
-            </View>
-
-            <View style={styles.rewardProgressSection}>
-              <View style={styles.rewardProgressHeader}>
-                <Text style={styles.rewardLevelText}>
-                  Nível {resultado?.nivelDepois ?? 1}
-                </Text>
-                <Text style={styles.rewardProgressText}>
-                  {(resultado?.xpDepois ?? 0 % XP_POR_NIVEL).toLocaleString("pt-BR")} /{" "}
-                  {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
-                </Text>
-              </View>
-              <ProgressBar progress={progresso} />
-            </View>
-
-            <View style={styles.rewardFooter}>
-              <PrimaryButton title="CONTINUAR JORNADA" onPress={handleFinishReward} />
-            </View>
-          </View>
-        </SafeAreaView>
-      </Modal>
+      <RewardModal
+        visible={showReward}
+        subtitle={`${tipoSelecionado?.label ?? "Atividade"} · ${minutes} min`}
+        xpGanho={resultado?.xpGanho ?? 0}
+        xpDepois={resultado?.xpDepois ?? 0}
+        nivelDepois={resultado?.nivelDepois ?? 1}
+        onContinue={handleFinishReward}
+      />
     </SafeAreaView>
   );
 }
@@ -345,96 +312,5 @@ const styles = StyleSheet.create({
     fontSize: 13,
     flex: 1,
     lineHeight: 20,
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  rewardContent: {
-    flex: 1,
-    padding: 24,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  glowCircle: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.primaryMuted,
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 2,
-    borderColor: Colors.primaryBase,
-    marginBottom: 24,
-    shadowColor: Colors.primaryBase,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.5,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  rewardTitle: {
-    color: Colors.primary,
-    fontSize: 32,
-    fontWeight: "bold",
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  rewardSubtitle: {
-    color: Colors.textSecondary,
-    fontSize: 18,
-    textAlign: "center",
-    marginBottom: 40,
-  },
-  xpCard: {
-    backgroundColor: Colors.surfaceDark,
-    borderRadius: 10,
-    paddingVertical: 24,
-    paddingHorizontal: 40,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: Colors.primaryDark,
-    marginBottom: 40,
-    width: "100%",
-  },
-  xpValue: {
-    color: Colors.primary,
-    fontSize: 40,
-    fontWeight: "bold",
-    marginBottom: 8,
-  },
-  xpLabel: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textTransform: "uppercase",
-    letterSpacing: 1,
-  },
-  rewardProgressSection: {
-    width: "100%",
-    backgroundColor: Colors.surfaceDark,
-    padding: 20,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginBottom: 40,
-  },
-  rewardProgressHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-end",
-    marginBottom: 12,
-  },
-  rewardLevelText: {
-    color: Colors.textPrimary,
-    fontSize: 18,
-    fontWeight: "bold",
-  },
-  rewardProgressText: {
-    color: Colors.primaryBase,
-    fontSize: 14,
-    fontWeight: "bold",
-  },
-  rewardFooter: {
-    width: "100%",
-    marginTop: "auto",
   },
 });

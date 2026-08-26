@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ScreenHeader } from "../../components/ScreenHeader";
+import { RewardModal } from "../../components/RewardModal";
 import { trpc } from "../../lib/trpc";
 
 const DIFICULDADE_COR: Record<string, string> = {
@@ -33,19 +34,42 @@ export default function QuestsScreen() {
   const utils = trpc.useUtils();
   const { data: missoes, isLoading } = trpc.missoesUsuario.hoje.useQuery();
 
+  const [showReward, setShowReward] = useState(false);
+  const [resultado, setResultado] = useState<{
+    subtitle: string;
+    xpGanho: number;
+    xpDepois: number;
+    nivelDepois: number;
+  } | null>(null);
+
   const gerarMutation = trpc.missoesUsuario.gerarHoje.useMutation({
     onSuccess: () => utils.missoesUsuario.hoje.invalidate(),
     onError: (e) => Alert.alert("Erro", e.message),
   });
 
   const concluirMutation = trpc.missoesUsuario.concluir.useMutation({
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
+      const missaoConcluida = missoes?.find((m) => m.id === variables.missaoUsuarioId);
+      setResultado({
+        subtitle: missaoConcluida
+          ? `${missaoConcluida.mission.title} · ${missaoConcluida.mission.category}`
+          : "Missão",
+        xpGanho: data.xp.xpGanho,
+        xpDepois: data.xp.xpDepois,
+        nivelDepois: data.xp.nivelDepois,
+      });
       utils.missoesUsuario.hoje.invalidate();
       utils.personagens.meuPersonagem.invalidate();
       utils.streak.atual.invalidate();
+      setShowReward(true);
     },
     onError: (e) => Alert.alert("Erro", e.message),
   });
+
+  const handleFinishReward = () => {
+    setShowReward(false);
+    setResultado(null);
+  };
 
   const concluidas = missoes?.filter((m) => m.status === "concluida").length ?? 0;
   const total = missoes?.length ?? 0;
@@ -181,6 +205,15 @@ export default function QuestsScreen() {
           </View>
         )}
       </ScrollView>
+
+      <RewardModal
+        visible={showReward}
+        subtitle={resultado?.subtitle ?? "Missão"}
+        xpGanho={resultado?.xpGanho ?? 0}
+        xpDepois={resultado?.xpDepois ?? 0}
+        nivelDepois={resultado?.nivelDepois ?? 1}
+        onContinue={handleFinishReward}
+      />
     </SafeAreaView>
   );
 }
