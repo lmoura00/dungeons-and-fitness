@@ -85,7 +85,22 @@ function syncHealthKitToday(): Promise<SyncHealthResult> {
 // ─── Android: Health Connect ────────────────────────────────────────────────
 
 async function requestHealthConnectPermissions(): Promise<boolean> {
-  const { initialize, requestPermission } = await import("react-native-health-connect");
+  const { initialize, requestPermission, getSdkStatus, SdkAvailabilityStatus } = await import(
+    "react-native-health-connect"
+  );
+
+  // Sem esse guard, chamar requestPermission num aparelho sem o Health Connect
+  // (Android <14 sem o app instalado) lança exceção nativa e fecha o app.
+  const status = await getSdkStatus();
+  if (status === SdkAvailabilityStatus.SDK_UNAVAILABLE) {
+    throw new Error(
+      "O Health Connect não está disponível neste aparelho. No Android 13 ou anterior, instale o app Health Connect pela Play Store."
+    );
+  }
+  if (status === SdkAvailabilityStatus.SDK_UNAVAILABLE_PROVIDER_UPDATE_REQUIRED) {
+    throw new Error("Atualize o app Health Connect pela Play Store para sincronizar seus dados.");
+  }
+
   const inicializado = await initialize();
   if (!inicializado) return false;
   const concedidas = await requestPermission([
