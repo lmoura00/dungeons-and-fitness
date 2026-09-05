@@ -84,10 +84,20 @@ function syncHealthKitToday(): Promise<SyncHealthResult> {
 
 // ─── Android: Health Connect ────────────────────────────────────────────────
 
+const PERMISSOES_HEALTH_CONNECT = [
+  { accessType: "read", recordType: "Steps" },
+  { accessType: "read", recordType: "Distance" },
+  { accessType: "read", recordType: "HeartRate" },
+] as const;
+
 async function requestHealthConnectPermissions(): Promise<boolean> {
-  const { initialize, requestPermission, getSdkStatus, SdkAvailabilityStatus } = await import(
-    "react-native-health-connect"
-  );
+  const {
+    initialize,
+    requestPermission,
+    getGrantedPermissions,
+    getSdkStatus,
+    SdkAvailabilityStatus,
+  } = await import("react-native-health-connect");
 
   // Sem esse guard, chamar requestPermission num aparelho sem o Health Connect
   // (Android <14 sem o app instalado) lança exceção nativa e fecha o app.
@@ -103,11 +113,17 @@ async function requestHealthConnectPermissions(): Promise<boolean> {
 
   const inicializado = await initialize();
   if (!inicializado) return false;
-  const concedidas = await requestPermission([
-    { accessType: "read", recordType: "Steps" },
-    { accessType: "read", recordType: "Distance" },
-    { accessType: "read", recordType: "HeartRate" },
-  ]);
+
+  // Se já temos tudo concedido, não reabre o diálogo (importante pro auto-sync).
+  const jaConcedidas = await getGrantedPermissions();
+  const temTudo = PERMISSOES_HEALTH_CONNECT.every((p) =>
+    jaConcedidas.some(
+      (g) => g.accessType === p.accessType && g.recordType === p.recordType
+    )
+  );
+  if (temTudo) return true;
+
+  const concedidas = await requestPermission([...PERMISSOES_HEALTH_CONNECT]);
   return concedidas.length > 0;
 }
 

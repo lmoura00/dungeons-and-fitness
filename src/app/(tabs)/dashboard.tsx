@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,10 +7,11 @@ import {
   Image,
   TouchableOpacity,
   Alert,
+  Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../constants/Colors";
 import { ProgressBar } from "../../components/ProgressBar";
@@ -20,6 +21,7 @@ import { getAvatar } from "../../utils/getAvatar";
 import { requestHealthPermissions, syncTodayHealthData } from "../../lib/health";
 
 const XP_POR_NIVEL = 3000;
+const AUTO_SYNC_INTERVALO_MS = 10 * 60 * 1000;
 
 function calcularPatamar(nivel: number): string {
   if (nivel <= 10) return "Iniciante";
@@ -54,20 +56,38 @@ export default function DashboardScreen() {
 
   const sincronizarMutation = trpc.saude.sincronizar.useMutation({
     onSuccess: () => utils.saude.historico.invalidate(),
-    onError: (e) => Alert.alert("Erro ao sincronizar", e.message),
   });
 
-  const handleSincronizarSaude = async () => {
+  // Ref pra usar a mutation dentro de um callback estável (useFocusEffect).
+  const sincronizarMutationRef = useRef(sincronizarMutation);
+  sincronizarMutationRef.current = sincronizarMutation;
+  const ultimoAutoSync = useRef(0);
+
+  const sincronizarSaude = useCallback(async ({ silencioso }: { silencioso: boolean }) => {
+    if (Platform.OS === "web") return;
     setSincronizando(true);
     try {
       const permitido = await requestHealthPermissions();
       if (!permitido) {
-        Alert.alert("Permissão necessária", "Autorize o acesso aos dados de saúde para sincronizar.");
+        if (!silencioso) {
+          Alert.alert("Permissão necessária", "Autorize o acesso aos dados de saúde para sincronizar.");
+        }
         return;
       }
       const dados = await syncTodayHealthData();
+      const semDados =
+        !dados.steps && dados.distanceKm == null && dados.avgHeartRateBpm == null;
+      if (semDados) {
+        if (!silencioso) {
+          Alert.alert(
+            "Nenhum dado de saúde hoje",
+            "Não encontramos passos, distância ou frequência cardíaca no Health Connect. Conecte o Samsung Health (ou outro app de saúde) ao Health Connect e tente de novo."
+          );
+        }
+        return;
+      }
       const hoje = new Date().toISOString().split("T")[0];
-      sincronizarMutation.mutate({
+      await sincronizarMutationRef.current.mutateAsync({
         data: hoje,
         passos: dados.steps,
         distanciaKm: dados.distanceKm,
@@ -75,10 +95,26 @@ export default function DashboardScreen() {
         fonte: dados.source,
       });
     } catch (e: any) {
-      Alert.alert("Erro ao ler dados de saúde", e?.message ?? "Tente novamente.");
+      if (!silencioso) {
+        Alert.alert("Erro ao sincronizar saúde", e?.message ?? "Tente novamente.");
+      }
     } finally {
       setSincronizando(false);
     }
+  }, []);
+
+  // Auto-sync ao focar a tela, no máximo 1x a cada 10 min. Sem alertas.
+  useFocusEffect(
+    useCallback(() => {
+      if (Date.now() - ultimoAutoSync.current < AUTO_SYNC_INTERVALO_MS) return;
+      ultimoAutoSync.current = Date.now();
+      void sincronizarSaude({ silencioso: true });
+    }, [sincronizarSaude])
+  );
+
+  const handleSincronizarSaude = () => {
+    ultimoAutoSync.current = Date.now();
+    void sincronizarSaude({ silencioso: false });
   };
 
   const saudeHoje = saudeHistorico?.[0];
