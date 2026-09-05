@@ -19,15 +19,7 @@ import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc } from "../../../lib/trpc";
 import { limparSessao } from "../../../lib/auth";
 import { getAvatar } from "../../../utils/getAvatar";
-
-const XP_POR_NIVEL = 3000;
-
-function calcularPatamar(nivel: number): string {
-  if (nivel <= 10) return "Iniciante";
-  if (nivel <= 20) return "Aventureiro";
-  if (nivel <= 30) return "Herói";
-  return "Lendário";
-}
+import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel } from "../../../lib/xp";
 
 const ATRIBUTOS = [
   { key: "strength", label: "Força",      ionicon: "barbell", color: Colors.statStrength },
@@ -43,9 +35,10 @@ export default function ProfileScreen() {
   const { data: conquistas } = trpc.conquistasUsuario.minhasConquistas.useQuery();
   const { data: todasClasses } = trpc.classes.listar.useQuery();
 
-  const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
-  const xpNoNivel = personagem ? personagem.currentXp % XP_POR_NIVEL : 0;
-  const progresso = xpNoNivel / XP_POR_NIVEL;
+  const nivel = personagem ? calcularNivel(personagem.currentXp) : 1;
+  const xpNoNivel = personagem ? calcularXpNoNivel(personagem.currentXp) : 0;
+  const custoNivel = custoDoNivel(nivel);
+  const progresso = xpNoNivel / custoNivel;
   const patamar = calcularPatamar(nivel);
   const attrs = personagem?.attributes;
   const classeAtualId = personagem?.class?.id;
@@ -129,7 +122,7 @@ export default function ProfileScreen() {
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>PROGRESSO</Text>
             <Text style={styles.cardValue}>
-              {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+              {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
             </Text>
           </View>
           <ProgressBar progress={progresso} />

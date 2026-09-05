@@ -19,16 +19,9 @@ import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
 import { requestHealthPermissions, syncTodayHealthData } from "../../lib/health";
+import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel } from "../../lib/xp";
 
-const XP_POR_NIVEL = 3000;
 const AUTO_SYNC_INTERVALO_MS = 10 * 60 * 1000;
-
-function calcularPatamar(nivel: number): string {
-  if (nivel <= 10) return "Iniciante";
-  if (nivel <= 20) return "Aventureiro";
-  if (nivel <= 30) return "Herói";
-  return "Lendário";
-}
 
 function getSaudacao(): string {
   const h = new Date().getHours();
@@ -119,9 +112,10 @@ export default function DashboardScreen() {
 
   const saudeHoje = saudeHistorico?.[0];
 
-  const nivel = personagem ? Math.floor(personagem.currentXp / XP_POR_NIVEL) + 1 : 1;
-  const xpNoNivel = personagem ? personagem.currentXp % XP_POR_NIVEL : 0;
-  const progresso = xpNoNivel / XP_POR_NIVEL;
+  const nivel = personagem ? calcularNivel(personagem.currentXp) : 1;
+  const xpNoNivel = personagem ? calcularXpNoNivel(personagem.currentXp) : 0;
+  const custoNivel = custoDoNivel(nivel);
+  const progresso = xpNoNivel / custoNivel;
   const patamar = calcularPatamar(nivel);
   const diasSequencia = streak?.diasSequencia ?? 0;
   const streakAtivo = diasSequencia > 0;
@@ -203,7 +197,7 @@ export default function DashboardScreen() {
               <Text style={styles.featuredTitle}>{personagem?.class?.name ?? "Aventureiro"}</Text>
               <View style={styles.featuredBarWrap}>
                 <Text style={styles.featuredSub}>
-                  {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+                  {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
                 </Text>
                 <ProgressBar progress={progresso} />
               </View>

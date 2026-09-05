@@ -5,8 +5,8 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../constants/Colors";
 import { PrimaryButton } from "./PrimaryButton";
+import { calcularXpNoNivel, custoDoNivel } from "../lib/xp";
 
-const XP_POR_NIVEL = 3000;
 const GOLD_SOFT_BORDER = "rgba(212, 168, 75, 0.35)";
 const GOLD_TINT_BG = "rgba(212, 168, 75, 0.10)";
 const GOLD_TINT_BORDER = "rgba(212, 168, 75, 0.30)";
@@ -22,8 +22,9 @@ interface RewardModalProps {
 }
 
 export function RewardModal({ visible, subtitle, xpGanho, xpDepois, nivelDepois, onContinue }: RewardModalProps) {
-  const xpNoNivel = xpDepois % XP_POR_NIVEL;
-  const progresso = Math.min(Math.max(xpNoNivel / XP_POR_NIVEL, 0), 1);
+  const xpNoNivel = calcularXpNoNivel(xpDepois);
+  const custoNivel = custoDoNivel(nivelDepois);
+  const progresso = Math.min(Math.max(xpNoNivel / custoNivel, 0), 1);
 
   return (
     <Modal visible={visible} animationType="slide" transparent={false}>
@@ -55,7 +56,7 @@ export function RewardModal({ visible, subtitle, xpGanho, xpDepois, nivelDepois,
             <View style={styles.progressHeader}>
               <Text style={styles.levelText}>Nível {nivelDepois}</Text>
               <Text style={styles.progressText}>
-                {xpNoNivel.toLocaleString("pt-BR")} / {XP_POR_NIVEL.toLocaleString("pt-BR")} XP
+                {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
               </Text>
             </View>
             <View style={styles.progressTrack}>
