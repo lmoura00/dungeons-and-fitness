@@ -28,3 +28,10 @@ export function calcularPatamar(nivel: number): string {
   if (nivel <= 30) return "Herói";
   return "Lendário";
 }
+
+// Texto exibido no InfoButton do card de XP.
+export const EXPLICACAO_XP = [
+  "Cada caloria que você queima em treinos e atividades vale 1 XP.",
+  `A barra mostra seu progresso dentro do nível atual. Cada nível pede mais XP que o anterior: o nível 1→2 custa ${XP_BASE_NIVEL.toLocaleString("pt-BR")} XP e cada nível seguinte pede ${XP_INCREMENTO_NIVEL} a mais.`,
+  "Ao encher a barra você sobe de nível. A cada 10 níveis você muda de patamar (Iniciante → Aventureiro → Herói → Lendário) e o avatar evolui.",
+];

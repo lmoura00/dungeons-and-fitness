@@ -19,7 +19,8 @@ import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc } from "../../../lib/trpc";
 import { limparSessao } from "../../../lib/auth";
 import { getAvatar } from "../../../utils/getAvatar";
-import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel } from "../../../lib/xp";
+import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../../lib/xp";
+import { InfoButton } from "../../../components/InfoButton";
 
 const ATRIBUTOS = [
   { key: "strength", label: "Força",      ionicon: "barbell", color: Colors.statStrength },
@@ -120,7 +121,10 @@ export default function ProfileScreen() {
         {/* XP */}
         <View style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.cardTitle}>PROGRESSO</Text>
+            <View style={styles.cardTitleRow}>
+              <Text style={styles.cardTitle}>PROGRESSO</Text>
+              <InfoButton title="Como funciona o XP" paragrafos={EXPLICACAO_XP} />
+            </View>
             <Text style={styles.cardValue}>
               {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
             </Text>
@@ -360,6 +364,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
+  },
+  cardTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   cardTitle: {
     color: Colors.textSecondary,

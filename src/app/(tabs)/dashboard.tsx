@@ -19,7 +19,8 @@ import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
 import { requestHealthPermissions, syncTodayHealthData } from "../../lib/health";
-import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel } from "../../lib/xp";
+import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../lib/xp";
+import { InfoButton } from "../../components/InfoButton";
 
 const AUTO_SYNC_INTERVALO_MS = 10 * 60 * 1000;
 
@@ -196,9 +197,12 @@ export default function DashboardScreen() {
               </View>
               <Text style={styles.featuredTitle}>{personagem?.class?.name ?? "Aventureiro"}</Text>
               <View style={styles.featuredBarWrap}>
-                <Text style={styles.featuredSub}>
-                  {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
-                </Text>
+                <View style={styles.featuredSubRow}>
+                  <Text style={styles.featuredSub}>
+                    {xpNoNivel.toLocaleString("pt-BR")} / {custoNivel.toLocaleString("pt-BR")} XP
+                  </Text>
+                  <InfoButton title="Como funciona o XP" paragrafos={EXPLICACAO_XP} size={14} />
+                </View>
                 <ProgressBar progress={progresso} />
               </View>
             </View>
@@ -508,6 +512,11 @@ const styles = StyleSheet.create({
     color: Colors.textSecondary,
     fontSize: 12,
     marginBottom: 4,
+  },
+  featuredSubRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   featuredBarWrap: {
     marginTop: 6,
