@@ -33,6 +33,7 @@ const CATEGORIA_CONFIG: Record<string, { ionicon: string; color: string }> = {
 export default function QuestsScreen() {
   const utils = trpc.useUtils();
   const { data: missoes, isLoading } = trpc.missoesUsuario.hoje.useQuery();
+  const { data: rerolls } = trpc.missoesUsuario.rerollsRestantes.useQuery();
 
   const [showReward, setShowReward] = useState(false);
   const [resultado, setResultado] = useState<{
@@ -46,6 +47,29 @@ export default function QuestsScreen() {
     onSuccess: () => utils.missoesUsuario.hoje.invalidate(),
     onError: (e) => Alert.alert("Erro", e.message),
   });
+
+  const rolarMutation = trpc.missoesUsuario.rolarHoje.useMutation({
+    onSuccess: () => {
+      utils.missoesUsuario.hoje.invalidate();
+      utils.missoesUsuario.rerollsRestantes.invalidate();
+    },
+    onError: (e) => Alert.alert("Erro", e.message),
+  });
+
+  const pendentes = missoes?.filter((m) => m.status === "pendente").length ?? 0;
+  const rerollsRestantes = rerolls?.restantes ?? 0;
+  const podeRolar = rerollsRestantes > 0 && pendentes > 0 && !rolarMutation.isPending;
+
+  const handleRolar = () => {
+    Alert.alert(
+      "Rolar missões",
+      `Troca as ${pendentes} missão(ões) pendente(s) por novas. Você tem ${rerollsRestantes} reroll(s) hoje.`,
+      [
+        { text: "Cancelar", style: "cancel" },
+        { text: "Rolar", onPress: () => rolarMutation.mutate() },
+      ]
+    );
+  };
 
   const concluirMutation = trpc.missoesUsuario.concluir.useMutation({
     onSuccess: (data, variables) => {
@@ -126,6 +150,30 @@ export default function QuestsScreen() {
           </View>
         ) : (
           <View style={styles.questsList}>
+            <View style={styles.rerollBar}>
+              <Text style={styles.rerollLabel}>
+                {rerollsRestantes > 0
+                  ? `${rerollsRestantes} reroll${rerollsRestantes > 1 ? "s" : ""} hoje`
+                  : "Sem rerolls hoje"}
+              </Text>
+              <TouchableOpacity
+                style={[styles.rerollButton, !podeRolar && styles.rerollButtonDisabled]}
+                onPress={handleRolar}
+                disabled={!podeRolar}
+                activeOpacity={0.8}
+              >
+                {rolarMutation.isPending ? (
+                  <ActivityIndicator size="small" color={Colors.primary} />
+                ) : (
+                  <>
+                    <Ionicons name="dice-outline" size={16} color={podeRolar ? Colors.primary : Colors.textMuted} />
+                    <Text style={[styles.rerollButtonText, !podeRolar && styles.rerollButtonTextDisabled]}>
+                      Rolar novas
+                    </Text>
+                  </>
+                )}
+              </TouchableOpacity>
+            </View>
             {missoes.map((missaoUsuario) => {
               const concluida = missaoUsuario.status === "concluida";
               const processando =
@@ -296,6 +344,40 @@ const styles = StyleSheet.create({
   },
   questsList: {
     gap: 12,
+  },
+  rerollBar: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 2,
+  },
+  rerollLabel: {
+    color: Colors.textMuted,
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  rerollButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: Colors.primaryBase,
+    backgroundColor: Colors.primaryMuted,
+  },
+  rerollButtonDisabled: {
+    borderColor: Colors.border,
+    backgroundColor: "transparent",
+  },
+  rerollButtonText: {
+    color: Colors.primary,
+    fontSize: 12,
+    fontWeight: "bold",
+  },
+  rerollButtonTextDisabled: {
+    color: Colors.textMuted,
   },
   questCard: {
     flexDirection: "row",
