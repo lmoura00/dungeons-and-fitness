@@ -18,7 +18,7 @@ import { ProgressBar } from "../../components/ProgressBar";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
-import { requestHealthPermissions, syncTodayHealthData } from "../../lib/health";
+import { requestHealthPermissions, syncTodayHealthData, estimarDistanciaKm, EXPLICACAO_SAUDE } from "../../lib/health";
 import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../lib/xp";
 import { InfoButton } from "../../components/InfoButton";
 
@@ -112,6 +112,9 @@ export default function DashboardScreen() {
   };
 
   const saudeHoje = saudeHistorico?.[0];
+  const distanciaKm =
+    saudeHoje?.distanceKm ?? (saudeHoje?.steps ? estimarDistanciaKm(saudeHoje.steps) : undefined);
+  const distanciaEstimada = saudeHoje?.distanceKm == null && distanciaKm != null;
 
   const nivel = personagem ? calcularNivel(personagem.currentXp) : 1;
   const xpNoNivel = personagem ? calcularXpNoNivel(personagem.currentXp) : 0;
@@ -238,7 +241,10 @@ export default function DashboardScreen() {
 
         {/* Saúde */}
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>SAÚDE</Text>
+          <View style={styles.sectionTitleRow}>
+            <Text style={styles.sectionTitle}>SAÚDE</Text>
+            <InfoButton title="Dados de saúde" paragrafos={EXPLICACAO_SAUDE} />
+          </View>
         </View>
         <View style={styles.healthCard}>
           <View style={styles.healthStatsRow}>
@@ -250,7 +256,9 @@ export default function DashboardScreen() {
             <View style={styles.healthStat}>
               <Ionicons name="navigate" size={18} color={Colors.statFocus} />
               <Text style={styles.healthStatValue}>
-                {saudeHoje?.distanceKm != null ? `${saudeHoje.distanceKm.toFixed(1)} km` : "—"}
+                {distanciaKm != null
+                  ? `${distanciaEstimada ? "~" : ""}${distanciaKm.toFixed(1)} km`
+                  : "—"}
               </Text>
               <Text style={styles.healthStatLabel}>Distância</Text>
             </View>
@@ -625,6 +633,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 24,
     marginBottom: 12,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
   },
   sectionTitle: {
     color: Colors.textSecondary,

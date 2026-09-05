@@ -7,6 +7,21 @@ export interface SyncHealthResult {
   source: "healthkit" | "health_connect";
 }
 
+const PASSADA_MEDIA_M = 0.762; // passada média de caminhada
+
+// Estimativa de distância a partir dos passos — usada quando o Health Connect
+// não tem registro real de distância (comum em uso passivo, sem treino rastreado).
+export function estimarDistanciaKm(steps: number): number | undefined {
+  return steps > 0 ? (steps * PASSADA_MEDIA_M) / 1000 : undefined;
+}
+
+// Texto do InfoButton no card de SAÚDE.
+export const EXPLICACAO_SAUDE = [
+  "Passos e distância vêm do sensor do celular, via Samsung Health / Health Connect.",
+  "A distância marcada com ~ é uma estimativa a partir dos passos. Para distância real, faça um treino rastreado (Caminhada/Corrida) no app de saúde.",
+  "FC Média só aparece se você usar um relógio ou pulseira que meça frequência cardíaca — o celular sozinho não mede.",
+];
+
 export async function requestHealthPermissions(): Promise<boolean> {
   if (Platform.OS === "ios") return requestHealthKitPermissions();
   if (Platform.OS === "android") return requestHealthConnectPermissions();
