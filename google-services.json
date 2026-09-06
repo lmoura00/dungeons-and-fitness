@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "543458502806",
+    "project_id": "dungeons-bb8de",
+    "storage_bucket": "dungeons-bb8de.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:543458502806:android:f35f5426e1077a0098fab7",
+        "android_client_info": {
+          "package_name": "dev.dungeons.fitness"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBCI-0KS8f89Nmjt3OuweW8VJ945ha-BZw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
