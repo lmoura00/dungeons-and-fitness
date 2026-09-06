@@ -1,6 +1,8 @@
 # Push Notifications — estado e o que falta
 
 > Levantado em 2026-09-05. **Push NÃO funciona no build Android atual** — falta configurar o FCM.
+>
+> **Atualização 2026-09-06: FCM configurado e testado com sucesso** (foreground e background). Ver checklist abaixo — todos os itens do Android concluídos.
 
 ## Diagnóstico
 
@@ -36,18 +38,15 @@ O sino in-app (`notifications` no banco, tela `notifications.tsx`) **funciona** 
 
 ## Checklist — Android (FCM), fazer uma vez
 
-- [ ] **Firebase Console** → criar projeto (ou reusar) → *Adicionar app* → Android
+- [x] **Firebase Console** → criar projeto (`dungeons-bb8de`) → *Adicionar app* → Android
   - Package name: `dev.dungeons.fitness`
   - Baixar `google-services.json`
-- [ ] Colocar `google-services.json` em `frontend/` (adicionar a `.gitignore` — contém IDs do projeto, não é segredo forte mas evita ruído; EAS lê do repo, então se for gitignored precisa de `.easignore` ajustado OU commitar mesmo)
-- [ ] `frontend/app.json` → dentro de `"android"`:
-  ```json
-  "googleServicesFile": "./google-services.json"
-  ```
-- [ ] **FCM V1**: Firebase → Configurações do projeto → *Contas de serviço* → *Gerar nova chave privada* (baixa um JSON)
-- [ ] Subir pro EAS: `eas credentials` → plataforma Android → *Push Notifications: Manage your FCM V1 service account key* → *Upload* (aponta pro JSON da conta de serviço)
-- [ ] `eas build -p android --profile preview` (rebuild — o `google-services.json` precisa entrar no binário)
-- [ ] Abrir o app no device, ativar notificações em *Perfil → Configurações*, confirmar que `users.pushToken` foi salvo (`ExponentPushToken[...]`)
+- [x] Colocar `google-services.json` em `frontend/` (commitado — não é segredo forte, só IDs do projeto)
+- [x] `frontend/app.json` → dentro de `"android"`: `"googleServicesFile": "./google-services.json"`
+- [x] **FCM V1**: Firebase → Configurações do projeto → *Contas de serviço* → *Gerar nova chave privada* (JSON salvo em `frontend/credentials/`, gitignored — é credencial sensível de verdade)
+- [x] Subido pro EAS via `eas credentials` → Android → *Google Service Account* → *Manage your Google Service Account Key for Push Notifications (FCM V1)* → *Set up*
+- [x] `eas build -p android --profile preview` (rebuild)
+- [x] Testado: token `ExponentPushToken[...]` gerado e push confirmado em foreground e background (2026-09-06)
 
 ## Checklist — iOS (APNs)
 
