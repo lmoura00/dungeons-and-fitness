@@ -3,6 +3,14 @@
 Status em 2026-09-02: config do projeto pronta, falta rodar o build.
 Não precisa de Mac — build e submit rodam na nuvem do EAS.
 
+> **Atualização 2026-09-06**: build 1.0.0 (4) enviado com sucesso pro TestFlight.
+> App criado no App Store Connect (nome "Dungeons & Fitness", bundle
+> `dev.dungeons.fitness`, ID `6809237695`). Grupo de teste interno (Team Expo)
+> já libera na hora. Grupo externo "Beta Pública" criado, build em
+> **"Aguardando revisão"** (Beta App Review, ~1 dia). Build (3) tinha sido
+> rejeitado por `ITMS-90683` (faltava `NSHealthUpdateUsageDescription` no
+> `plugins/withHealthKit.js`) — já corrigido.
+
 ## Dados da conta Apple (cliente)
 
 | Item | Valor |
