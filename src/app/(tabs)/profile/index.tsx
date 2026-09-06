@@ -45,6 +45,13 @@ export default function ProfileScreen() {
   const classeAtualId = personagem?.class?.id;
   const podeEscolherClasse = nivel >= 5;
 
+  // minhasConquistas retorna TODAS as conquistas com um flag `desbloqueada`.
+  const conquistasOrdenadas = [...(conquistas ?? [])].sort(
+    (a, b) => Number(b.desbloqueada) - Number(a.desbloqueada)
+  );
+  const totalConquistas = conquistas?.length ?? 0;
+  const totalDesbloqueadas = conquistas?.filter((c) => c.desbloqueada).length ?? 0;
+
   const trocarClasseMutation = trpc.personagens.trocarClasse.useMutation({
     onSuccess: () => utils.personagens.meuPersonagem.invalidate(),
     onError: (e) => Alert.alert("Erro", e.message),
@@ -226,24 +233,35 @@ export default function ProfileScreen() {
         <View style={styles.card}>
           <View style={styles.cardHeader}>
             <Text style={styles.cardTitle}>CONQUISTAS</Text>
-            <Text style={styles.cardValue}>{conquistas?.length ?? 0} desbloqueadas</Text>
+            <Text style={styles.cardValue}>
+              {totalDesbloqueadas} / {totalConquistas} desbloqueadas
+            </Text>
           </View>
-          {!conquistas || conquistas.length === 0 ? (
+          {totalConquistas === 0 ? (
             <Text style={styles.emptyText}>Nenhuma conquista ainda. Continue jogando!</Text>
           ) : (
             <View style={styles.conquistasList}>
-              {conquistas.filter((c) => c.achievement != null).map((c) => (
-                <View key={c.id} style={styles.conquistaItem}>
-                  {c.achievement.icon ? (
-                    <Text style={styles.conquistaIconEmoji}>{c.achievement.icon}</Text>
+              {conquistasOrdenadas.map((c) => (
+                <View
+                  key={c.id}
+                  style={[styles.conquistaItem, !c.desbloqueada && styles.conquistaItemLocked]}
+                >
+                  {c.icon ? (
+                    <Text style={styles.conquistaIconEmoji}>{c.icon}</Text>
                   ) : (
-                    <Ionicons name="trophy" size={24} color={Colors.gold} />
+                    <Ionicons
+                      name={c.desbloqueada ? "trophy" : "lock-closed"}
+                      size={22}
+                      color={c.desbloqueada ? Colors.gold : Colors.textMuted}
+                    />
                   )}
                   <View style={styles.conquistaInfo}>
-                    <Text style={styles.conquistaTitle}>{c.achievement.title}</Text>
-                    <Text style={styles.conquistaDesc}>{c.achievement.description}</Text>
+                    <Text style={styles.conquistaTitle}>{c.title}</Text>
+                    <Text style={styles.conquistaDesc}>{c.description}</Text>
                   </View>
-                  <Text style={styles.conquistaXp}>+{c.achievement.xpReward}</Text>
+                  <Text style={[styles.conquistaXp, !c.desbloqueada && styles.conquistaXpLocked]}>
+                    +{c.xpReward}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -532,6 +550,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
+  conquistaItemLocked: { opacity: 0.45 },
   conquistaIconEmoji: { fontSize: 24 },
   conquistaInfo: { flex: 1 },
   conquistaTitle: {
@@ -548,5 +567,8 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: 13,
     fontWeight: "bold",
+  },
+  conquistaXpLocked: {
+    color: Colors.textMuted,
   },
 });
