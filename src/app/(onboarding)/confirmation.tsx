@@ -15,6 +15,7 @@ import { Colors } from "../../constants/Colors";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { limparNovaContaPendente } from "../../lib/auth";
 import { trpc } from "../../lib/trpc";
+import { mensagemErroAmigavel } from "../../lib/errors";
 import { getAvatar, getAvatarByKey } from "../../utils/getAvatar";
 
 export default function ConfirmationScreen() {
@@ -37,7 +38,7 @@ export default function ConfirmationScreen() {
       limparNovaContaPendente();
       router.replace("/(tabs)/dashboard");
     },
-    onError: (e) => Alert.alert("Erro ao criar personagem", e.message),
+    onError: (e) => Alert.alert("Erro ao criar personagem", mensagemErroAmigavel(e)),
   });
 
   const handleFinish = () => {

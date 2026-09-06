@@ -18,6 +18,7 @@ import { Colors } from "../../constants/Colors";
 import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
+import { mensagemErroAmigavel } from "../../lib/errors";
 
 export default function ForgotPasswordScreen() {
   const [etapa, setEtapa] = useState<"email" | "redefinir">("email");
@@ -33,7 +34,7 @@ export default function ForgotPasswordScreen() {
       Alert.alert("Verifique seu e-mail", "Se o e-mail existir, um código foi enviado.");
     },
     onError(error) {
-      Alert.alert("Erro", error.message);
+      Alert.alert("Erro", mensagemErroAmigavel(error));
     },
   });
 
@@ -43,7 +44,7 @@ export default function ForgotPasswordScreen() {
       router.replace("/(auth)");
     },
     onError(error) {
-      Alert.alert("Erro", error.message);
+      Alert.alert("Erro", mensagemErroAmigavel(error));
     },
   });
 

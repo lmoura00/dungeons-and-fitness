@@ -8,6 +8,7 @@ import { Colors } from "../../../constants/Colors";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { GuildEmblemIcon, type GuildEmblem } from "../../../components/GuildEmblemIcon";
 import { trpc } from "../../../lib/trpc";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 
 export default function ConvitesGuildaScreen() {
   const utils = trpc.useUtils();
@@ -22,7 +23,7 @@ export default function ConvitesGuildaScreen() {
         router.back();
       }
     },
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   return (

@@ -27,6 +27,7 @@ import { GuildEmblemIcon, GUILD_EMBLEMAS, type GuildEmblem } from "../../../comp
 import { GuildListCard, MAX_MEMBROS_GUILDA } from "../../../components/GuildListCard";
 import { trpc } from "../../../lib/trpc";
 import { getAvatar } from "../../../utils/getAvatar";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 
 const GUILD_XP_POR_NIVEL = 5000;
 
@@ -87,7 +88,7 @@ export default function GuildScreen() {
       Alert.alert("Convite enviado!", "O personagem vai receber uma notificação.");
       setBuscaConvite("");
     },
-    onError: (e) => Alert.alert("Erro ao convidar", e.message),
+    onError: (e) => Alert.alert("Erro ao convidar", mensagemErroAmigavel(e)),
   });
 
   const criarMutation = trpc.guildas.criar.useMutation({
@@ -98,22 +99,22 @@ export default function GuildScreen() {
       setEmblema("escudo");
       invalidarGuildas();
     },
-    onError: (e) => Alert.alert("Erro ao criar guilda", e.message),
+    onError: (e) => Alert.alert("Erro ao criar guilda", mensagemErroAmigavel(e)),
   });
 
   const solicitarEntradaMutation = trpc.guildas.solicitarEntrada.useMutation({
     onSuccess: () => Alert.alert("Pedido enviado!", "O líder da guilda vai receber sua solicitação."),
-    onError: (e) => Alert.alert("Erro ao solicitar entrada", e.message),
+    onError: (e) => Alert.alert("Erro ao solicitar entrada", mensagemErroAmigavel(e)),
   });
 
   const sairMutation = trpc.guildas.sair.useMutation({
     onSuccess: invalidarGuildas,
-    onError: (e) => Alert.alert("Erro ao sair da guilda", e.message),
+    onError: (e) => Alert.alert("Erro ao sair da guilda", mensagemErroAmigavel(e)),
   });
 
   const excluirMutation = trpc.guildas.excluir.useMutation({
     onSuccess: invalidarGuildas,
-    onError: (e) => Alert.alert("Erro ao excluir guilda", e.message),
+    onError: (e) => Alert.alert("Erro ao excluir guilda", mensagemErroAmigavel(e)),
   });
 
   const handleCriar = () => {

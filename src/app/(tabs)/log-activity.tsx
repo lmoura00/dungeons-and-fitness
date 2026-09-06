@@ -21,6 +21,7 @@ import { PrimaryButton } from "../../components/PrimaryButton";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { RewardModal } from "../../components/RewardModal";
 import { trpc } from "../../lib/trpc";
+import { mensagemErroAmigavel } from "../../lib/errors";
 
 type TipoAtividade = "corrida" | "forca" | "ciclismo" | "natacao" | "yoga" | "esporte" | "outro";
 type Intensidade = "leve" | "moderado" | "intenso";
@@ -61,7 +62,7 @@ export default function LogActivityScreen() {
       utils.streak.atual.invalidate();
       setShowReward(true);
     },
-    onError: (e) => Alert.alert("Erro ao registrar", e.message),
+    onError: (e) => Alert.alert("Erro ao registrar", mensagemErroAmigavel(e)),
   });
 
   const handleLogActivity = () => {

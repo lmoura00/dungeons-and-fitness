@@ -18,6 +18,7 @@ import { PrimaryButton } from "../../../components/PrimaryButton";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc } from "../../../lib/trpc";
 import { obterPushToken } from "../../../lib/notifications";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 
 const PREFERENCIAS_FUTURAS = [
   { key: "tema", label: "Tema", desc: "Claro, escuro ou automático", ionicon: "color-palette-outline" },
@@ -43,7 +44,7 @@ export default function ConfiguracoesScreen() {
 
   const atualizarPushTokenMutation = trpc.usuarios.atualizarPushToken.useMutation({
     onSuccess: () => utils.usuarios.meuPerfil.invalidate(),
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   const editarMutation = trpc.usuarios.editar.useMutation({
@@ -51,7 +52,7 @@ export default function ConfiguracoesScreen() {
       utils.usuarios.meuPerfil.invalidate();
       Alert.alert("Pronto!", "Dados físicos atualizados.");
     },
-    onError: (e) => Alert.alert("Erro ao salvar", e.message),
+    onError: (e) => Alert.alert("Erro ao salvar", mensagemErroAmigavel(e)),
   });
 
   const handleToggleNotificacoes = async (valor: boolean) => {

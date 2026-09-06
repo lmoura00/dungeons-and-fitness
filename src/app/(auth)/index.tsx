@@ -21,6 +21,7 @@ import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { salvarSessao } from "../../lib/auth";
+import { mensagemErroAmigavel } from "../../lib/errors";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
@@ -36,7 +37,7 @@ export default function LoginScreen() {
       await salvarSessao(token, usuarioId);
     },
     onError(error) {
-      Alert.alert("Erro ao entrar", error.message);
+      Alert.alert("Erro ao entrar", mensagemErroAmigavel(error));
     },
   });
 

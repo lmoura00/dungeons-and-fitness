@@ -17,6 +17,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../../constants/Colors";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc, obterBaseUrl } from "../../../lib/trpc";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 import { getAvatar } from "../../../utils/getAvatar";
 
 type Mensagem = {
@@ -107,7 +108,7 @@ export default function GuildChatScreen() {
     // pra quem mandou ver a própria mensagem (a live feed serve pra ecoar
     // pros outros membros; se ela atrasar/falhar, o remetente já viu a sua).
     onSuccess: (mensagem) => adicionarMensagens([mensagem as Mensagem], false),
-    onError: (e) => Alert.alert("Erro ao enviar mensagem", __DEV__ ? `${e.message}\n\nURL: ${obterBaseUrl()}` : e.message),
+    onError: (e) => Alert.alert("Erro ao enviar mensagem", __DEV__ ? `${e.message}\n\nURL: ${obterBaseUrl()}` : mensagemErroAmigavel(e)),
   });
 
   const handleEnviar = () => {

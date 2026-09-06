@@ -21,6 +21,7 @@ import { limparSessao } from "../../../lib/auth";
 import { getAvatar } from "../../../utils/getAvatar";
 import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../../lib/xp";
 import { InfoButton } from "../../../components/InfoButton";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 
 const ATRIBUTOS = [
   { key: "strength", label: "Força",      ionicon: "barbell", color: Colors.statStrength },
@@ -54,7 +55,7 @@ export default function ProfileScreen() {
 
   const trocarClasseMutation = trpc.personagens.trocarClasse.useMutation({
     onSuccess: () => utils.personagens.meuPersonagem.invalidate(),
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   const handleTrocarClasse = (classe: { id: string; name: string; unlockLevel: number }) => {

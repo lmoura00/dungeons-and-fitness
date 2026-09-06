@@ -15,6 +15,7 @@ import { Colors } from "../../constants/Colors";
 import { ScreenHeader } from "../../components/ScreenHeader";
 import { RewardModal } from "../../components/RewardModal";
 import { trpc } from "../../lib/trpc";
+import { mensagemErroAmigavel } from "../../lib/errors";
 
 const DIFICULDADE_COR: Record<string, string> = {
   facil: Colors.statVitality,
@@ -45,7 +46,7 @@ export default function QuestsScreen() {
 
   const gerarMutation = trpc.missoesUsuario.gerarHoje.useMutation({
     onSuccess: () => utils.missoesUsuario.hoje.invalidate(),
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   const rolarMutation = trpc.missoesUsuario.rolarHoje.useMutation({
@@ -53,7 +54,7 @@ export default function QuestsScreen() {
       utils.missoesUsuario.hoje.invalidate();
       utils.missoesUsuario.rerollsRestantes.invalidate();
     },
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   const pendentes = missoes?.filter((m) => m.status === "pendente").length ?? 0;
@@ -87,7 +88,7 @@ export default function QuestsScreen() {
       utils.streak.atual.invalidate();
       setShowReward(true);
     },
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   const handleFinishReward = () => {

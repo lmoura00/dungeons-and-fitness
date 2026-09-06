@@ -17,6 +17,7 @@ import { CustomInput } from "../../components/CustomInput";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { marcarNovaContaPendente } from "../../lib/auth";
+import { mensagemErroAmigavel } from "../../lib/errors";
 
 const GENERO_MAP = { M: "masculino", F: "feminino", O: "nao_binario" } as const;
 const GENEROS = [
@@ -55,7 +56,7 @@ export default function RegisterScreen() {
       setTimeout(() => router.replace("/(auth)"), 1500);
     },
     onError(error) {
-      showError(error.message);
+      showError(mensagemErroAmigavel(error));
     },
   });
 

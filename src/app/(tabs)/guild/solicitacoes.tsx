@@ -6,6 +6,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Colors } from "../../../constants/Colors";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc } from "../../../lib/trpc";
+import { mensagemErroAmigavel } from "../../../lib/errors";
 
 export default function SolicitacoesGuildaScreen() {
   const utils = trpc.useUtils();
@@ -19,7 +20,7 @@ export default function SolicitacoesGuildaScreen() {
         utils.guildas.listar.invalidate();
       }
     },
-    onError: (e) => Alert.alert("Erro", e.message),
+    onError: (e) => Alert.alert("Erro", mensagemErroAmigavel(e)),
   });
 
   return (
