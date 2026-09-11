@@ -27,6 +27,7 @@
   "submit": {
     "production": {
       "ios": {
+        "ascAppId": "6809237695",
         "ascApiKeyPath": "./credentials/AuthKey_WYKVKK2KM5.p8",
         "ascApiKeyId": "WYKVKK2KM5",
         "ascApiKeyIssuerId": "137d59e7-211d-40cb-aff1-0cc8c1497202",
