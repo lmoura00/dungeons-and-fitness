@@ -2,6 +2,11 @@
 
 Status em 2026-09-06: build de produção pronto, falta só a credencial de API do Play Console pra rodar o `eas submit`.
 
+> **Atualização 2026-09-10**: credencial resolvida (service account criada e convidada
+> no Play Console). O `eas submit --platform android --profile production --latest`
+> já deve usar essa chave em vez de só oferecer a do Firebase. Passo a passo abaixo
+> fica como referência histórica.
+
 ## Onde parou
 
 - `eas build --platform android --profile production` já rodou com sucesso, gerou o `.aab` com o fix de FCM (ver `PUSH_NOTIFICATIONS_SETUP.md`)
