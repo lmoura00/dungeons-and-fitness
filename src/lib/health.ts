@@ -7,6 +7,13 @@ export interface SyncHealthResult {
   source: "healthkit" | "health_connect";
 }
 
+// Dica exibida quando a sync roda mas não retorna nenhum dado — o texto muda por
+// plataforma porque a origem dos dados é diferente (Apple Saúde vs Health Connect).
+export const DICA_SEM_DADOS_SAUDE =
+  Platform.OS === "ios"
+    ? "Não encontramos passos, distância ou frequência cardíaca no app Saúde. Abra Ajustes › Privacidade › Saúde › D&F e permita a leitura, depois tente de novo."
+    : "Não encontramos passos, distância ou frequência cardíaca no Health Connect. Conecte o Samsung Health (ou outro app de saúde) ao Health Connect e tente de novo.";
+
 const PASSADA_MEDIA_M = 0.762; // passada média de caminhada
 
 // Estimativa de distância a partir dos passos — usada quando o Health Connect
@@ -80,10 +87,13 @@ function syncHealthKitToday(): Promise<SyncHealthResult> {
   const AppleHealthKit = carregarAppleHealthKit();
   const options = { startDate: inicioDoDiaISO(), endDate: new Date().toISOString() };
 
-  const passos = new Promise<number>((resolve, reject) => {
+  // Sem passos no dia OU sem permissão de leitura, o HealthKit devolve o erro
+  // "No data available for the specified predicate" (o iOS não diferencia negado
+  // de vazio, por privacidade). Nos dois casos tratamos como 0 e deixamos a tela
+  // mostrar a dica de "nenhum dado" em vez de um alerta de erro cru.
+  const passos = new Promise<number>((resolve) => {
     AppleHealthKit.getStepCount(options, (err: string, results: { value: number }) => {
-      if (err) reject(new Error(err));
-      else resolve(Math.round(results.value));
+      resolve(err || !results ? 0 : Math.round(results.value));
     });
   });
 

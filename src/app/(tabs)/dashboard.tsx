@@ -18,7 +18,13 @@ import { ProgressBar } from "../../components/ProgressBar";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
-import { requestHealthPermissions, syncTodayHealthData, estimarDistanciaKm, EXPLICACAO_SAUDE } from "../../lib/health";
+import {
+  requestHealthPermissions,
+  syncTodayHealthData,
+  estimarDistanciaKm,
+  EXPLICACAO_SAUDE,
+  DICA_SEM_DADOS_SAUDE,
+} from "../../lib/health";
 import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../lib/xp";
 import { InfoButton } from "../../components/InfoButton";
 
@@ -73,10 +79,7 @@ export default function DashboardScreen() {
         !dados.steps && dados.distanceKm == null && dados.avgHeartRateBpm == null;
       if (semDados) {
         if (!silencioso) {
-          Alert.alert(
-            "Nenhum dado de saúde hoje",
-            "Não encontramos passos, distância ou frequência cardíaca no Health Connect. Conecte o Samsung Health (ou outro app de saúde) ao Health Connect e tente de novo."
-          );
+          Alert.alert("Nenhum dado de saúde hoje", DICA_SEM_DADOS_SAUDE);
         }
         return;
       }
