@@ -43,11 +43,20 @@ function inicioDoDiaISO(): string {
 // ─── iOS: HealthKit ─────────────────────────────────────────────────────────
 
 function carregarAppleHealthKit() {
+  let mod: any;
   try {
-    return require("react-native-health").default;
+    mod = require("react-native-health");
   } catch {
     throw new Error("Módulo nativo do HealthKit não está disponível neste build.");
   }
+  // react-native-health faz `module.exports = HealthKit` (sem `.default`).
+  // Em builds sem o módulo nativo (Expo Go, new arch sem suporte) o objeto vem
+  // sem os métodos — `initHealthKit` ausente é o sinal.
+  const AppleHealthKit = mod?.default ?? mod;
+  if (!AppleHealthKit || typeof AppleHealthKit.initHealthKit !== "function") {
+    throw new Error("Módulo nativo do HealthKit não está disponível neste build.");
+  }
+  return AppleHealthKit;
 }
 
 function requestHealthKitPermissions(): Promise<boolean> {
