@@ -143,7 +143,13 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <Image source={avatarSource} style={styles.headerAvatar} />
+              <View style={styles.headerAvatar}>
+                <Image
+                  source={avatarSource}
+                  style={styles.headerAvatarImg}
+                  resizeMode="cover"
+                />
+              </View>
               <View>
                 <Text style={styles.headerGreeting}>{getSaudacao()},</Text>
                 <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
@@ -193,7 +199,7 @@ export default function DashboardScreen() {
               <Image
                 source={avatarSource}
                 style={styles.featuredAvatar}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             </View>
             <View style={styles.featuredLeft}>
@@ -388,6 +394,16 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.surfaceDark,
     borderWidth: 2,
     borderColor: Colors.primaryDark,
+    overflow: "hidden",
+  },
+  // Arte do avatar é retrato (corpo inteiro); ancoramos no topo e deixamos o
+  // overflow do círculo cortar as pernas, não a cabeça.
+  headerAvatarImg: {
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 88,
   },
   headerGreeting: {
     color: Colors.textMuted,
