@@ -18,7 +18,8 @@ import { ProgressBar } from "../../components/ProgressBar";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
-import { CharacterAvatar } from "../../components/CharacterAvatar";
+import { getClassIcon } from "../../utils/getClassIcon";
+import { ClassIcon } from "../../components/ClassIcon";
 import {
   requestHealthPermissions,
   syncTodayHealthData,
@@ -129,6 +130,7 @@ export default function DashboardScreen() {
   const streakAtivo = diasSequencia > 0;
   const attrs = personagem?.attributes;
   const avatarSource = getAvatar(personagem?.class?.name, personagem?.race?.name, personagem?.avatarGender);
+  const classIconSource = getClassIcon(personagem?.class?.name);
 
   return (
     <SafeAreaView style={styles.container} edges={["top"]}>
@@ -144,7 +146,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <CharacterAvatar source={avatarSource} size={64} style={styles.headerAvatar} />
+              <ClassIcon source={classIconSource} size={64} style={styles.headerAvatar} />
               <View>
                 <Text style={styles.headerGreeting}>{getSaudacao()},</Text>
                 <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
