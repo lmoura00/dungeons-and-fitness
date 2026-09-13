@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
@@ -27,6 +26,7 @@ import { GuildEmblemIcon, GUILD_EMBLEMAS, type GuildEmblem } from "../../../comp
 import { GuildListCard, MAX_MEMBROS_GUILDA } from "../../../components/GuildListCard";
 import { trpc } from "../../../lib/trpc";
 import { getAvatar } from "../../../utils/getAvatar";
+import { CharacterAvatar } from "../../../components/CharacterAvatar";
 import { mensagemErroAmigavel } from "../../../lib/errors";
 
 const GUILD_XP_POR_NIVEL = 5000;
@@ -272,8 +272,9 @@ export default function GuildScreen() {
               <View style={styles.membersList}>
                 {minhaGuilda.members.map((membro) => (
                   <View key={membro.id} style={styles.memberCard}>
-                    <Image
+                    <CharacterAvatar
                       source={getAvatar(membro.character.class?.name, membro.character.race?.name, membro.character.avatarGender)}
+                      size={44}
                       style={styles.memberAvatar}
                     />
                     <View style={styles.memberInfo}>
@@ -463,8 +464,9 @@ export default function GuildScreen() {
                   ) : (
                     resultadosBusca.map((personagem) => (
                       <View key={personagem.id} style={styles.convidarResultCard}>
-                        <Image
+                        <CharacterAvatar
                           source={getAvatar(personagem.class?.name, personagem.race?.name, personagem.avatarGender)}
+                          size={44}
                           style={styles.memberAvatar}
                         />
                         <View style={styles.memberInfo}>
@@ -780,12 +782,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
   },
   memberAvatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surfaceDark,
   },
   memberInfo: {
     flex: 1,

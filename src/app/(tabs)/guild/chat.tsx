@@ -9,7 +9,6 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Image,
   Alert,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -19,6 +18,7 @@ import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc, obterBaseUrl } from "../../../lib/trpc";
 import { mensagemErroAmigavel } from "../../../lib/errors";
 import { getAvatar } from "../../../utils/getAvatar";
+import { CharacterAvatar } from "../../../components/CharacterAvatar";
 
 type Mensagem = {
   id: string;
@@ -191,8 +191,9 @@ export default function GuildChatScreen() {
             return (
               <View style={[styles.messageRow, propria && styles.messageRowPropria]}>
                 {!propria && (
-                  <Image
+                  <CharacterAvatar
                     source={getAvatar(autor.classe, autor.raca, autor.avatarGender)}
+                    size={30}
                     style={styles.avatar}
                   />
                 )}
@@ -281,12 +282,8 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
   },
   avatar: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
     borderWidth: 1,
     borderColor: Colors.border,
-    backgroundColor: Colors.surfaceDark,
   },
   bubble: {
     maxWidth: "78%",

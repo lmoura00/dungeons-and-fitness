@@ -18,6 +18,7 @@ import { ProgressBar } from "../../components/ProgressBar";
 import { PrimaryButton } from "../../components/PrimaryButton";
 import { trpc } from "../../lib/trpc";
 import { getAvatar } from "../../utils/getAvatar";
+import { CharacterAvatar } from "../../components/CharacterAvatar";
 import {
   requestHealthPermissions,
   syncTodayHealthData,
@@ -143,13 +144,7 @@ export default function DashboardScreen() {
         <View style={styles.header}>
           <View style={styles.headerRow}>
             <View style={styles.headerLeft}>
-              <View style={styles.headerAvatar}>
-                <Image
-                  source={avatarSource}
-                  style={styles.headerAvatarImg}
-                  resizeMode="cover"
-                />
-              </View>
+              <CharacterAvatar source={avatarSource} size={64} style={styles.headerAvatar} />
               <View>
                 <Text style={styles.headerGreeting}>{getSaudacao()},</Text>
                 <Text style={styles.headerName}>{personagem?.name ?? "Aventureiro"}</Text>
@@ -388,22 +383,8 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   headerAvatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: Colors.surfaceDark,
     borderWidth: 2,
     borderColor: Colors.primaryDark,
-    overflow: "hidden",
-  },
-  // Arte do avatar é retrato (corpo inteiro); ancoramos no topo e deixamos o
-  // overflow do círculo cortar as pernas, não a cabeça.
-  headerAvatarImg: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 88,
   },
   headerGreeting: {
     color: Colors.textMuted,
@@ -489,9 +470,12 @@ const styles = StyleSheet.create({
     padding: 20,
     minHeight: 140,
   },
+  // 96x128 = proporção 3:4, igual ao canvas normalizado dos avatares
+  // (900x1200) — assim o resizeMode="contain" preenche a moldura sem
+  // sobrar espaço em branco nas laterais.
   avatarFrame: {
     width: 96,
-    height: 116,
+    height: 128,
     borderRadius: 14,
     backgroundColor: "#2A1B0E",
     borderWidth: 1,
