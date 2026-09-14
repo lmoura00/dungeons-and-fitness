@@ -4,7 +4,6 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
   TouchableOpacity,
   Alert,
 } from "react-native";
@@ -18,10 +17,13 @@ import { ProgressBar } from "../../../components/ProgressBar";
 import { ScreenHeader } from "../../../components/ScreenHeader";
 import { trpc } from "../../../lib/trpc";
 import { limparSessao } from "../../../lib/auth";
-import { getAvatar } from "../../../utils/getAvatar";
+import { getClassIcon } from "../../../utils/getClassIcon";
+import { ClassIcon } from "../../../components/ClassIcon";
 import { calcularNivel, calcularXpNoNivel, calcularPatamar, custoDoNivel, EXPLICACAO_XP } from "../../../lib/xp";
 import { InfoButton } from "../../../components/InfoButton";
 import { mensagemErroAmigavel } from "../../../lib/errors";
+
+const CLASSES_OCULTAS = new Set(["Corredor", "Sábio", "Paladino"]);
 
 const ATRIBUTOS = [
   { key: "strength", label: "Força",      ionicon: "barbell", color: Colors.statStrength },
@@ -111,10 +113,10 @@ export default function ProfileScreen() {
         {/* Avatar Card */}
         <View style={styles.avatarCard}>
           <View style={styles.avatarGlow}>
-            <Image
-              source={getAvatar(personagem?.class?.name, personagem?.race?.name, personagem?.avatarGender)}
+            <ClassIcon
+              source={getClassIcon(personagem?.class?.name)}
+              size={100}
               style={styles.avatarImage}
-              resizeMode="contain"
             />
           </View>
           <Text style={styles.characterName}>{personagem?.name ?? "Aventureiro"}</Text>
@@ -159,6 +161,7 @@ export default function ProfileScreen() {
 
             {todasClasses
               .filter((c) => c.unlockLevel === 0 || c.unlockLevel <= 5)
+              .filter((c) => !CLASSES_OCULTAS.has(c.name))
               .sort((a, b) => a.unlockLevel - b.unlockLevel)
               .map((classe) => {
                 const isAtual = classe.id === classeAtualId;
@@ -176,10 +179,10 @@ export default function ProfileScreen() {
                     activeOpacity={isSelectable ? 0.7 : 1}
                     disabled={isLocked || isAtual}
                   >
-                    <Image
-                      source={getAvatar(classe.name, personagem?.race?.name, personagem?.avatarGender)}
-                      style={[styles.classeAvatar, isLocked && styles.classeAvatarLocked]}
-                      resizeMode="contain"
+                    <ClassIcon
+                      source={getClassIcon(classe.name)}
+                      size={40}
+                      style={styles.classeAvatar}
                     />
                     <View style={styles.classeInfo}>
                       <Text style={[styles.classeName, isLocked && styles.classeNameLocked]}>
@@ -482,9 +485,6 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     backgroundColor: Colors.surfaceDark,
-  },
-  classeAvatarLocked: {
-    tintColor: Colors.textMuted,
   },
   classeInfo: {
     flex: 1,
